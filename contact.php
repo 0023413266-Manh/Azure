@@ -1,0 +1,243 @@
+<?php
+session_start();
+include 'admin/connect.php';
+
+// XỬ LÝ KHI KHÁCH BẤM GỬI LỜI NHẮN
+if (isset($_POST['gui_lien_he'])) {
+    $ho_ten = $conn->real_escape_string($_POST['ho_ten']);
+    $so_dien_thoai = $conn->real_escape_string($_POST['so_dien_thoai']);
+    $email = $conn->real_escape_string($_POST['email']);
+    $noi_dung = $conn->real_escape_string($_POST['noi_dung']);
+
+    $sql_insert = "INSERT INTO lien_he (ho_ten, so_dien_thoai, email, noi_dung) 
+                   VALUES ('$ho_ten', '$so_dien_thoai', '$email', '$noi_dung')";
+    
+    if ($conn->query($sql_insert) === TRUE) {
+        $_SESSION['toast_msg'] = "Cảm ơn bạn! Lời nhắn đã được gửi tới TIMELESS.";
+        $_SESSION['toast_type'] = "success";
+    } else {
+        $_SESSION['toast_msg'] = "Lỗi: Không thể gửi tin nhắn lúc này.";
+        $_SESSION['toast_type'] = "error";
+    }
+    header("Location: contact.php");
+    exit();
+}
+?>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Liên hệ - Timeless</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div id="smart-header">
+        <header class="top-header">
+            <div class="logo">
+                <a href="index.php" class="logo-link">
+                    <h1>TIMELESS</h1>
+                    <img src="image/logo.png" alt="Timeless Icon">
+                </a>
+            </div>
+            
+            <div class="user-box">
+                <?php 
+                if(isset($_SESSION['user_id'])) {
+                    $uid = $_SESSION['user_id'];
+                    $get_name = $conn->query("SELECT ho_ten FROM nguoi_dung WHERE id = $uid");
+                    $ten_ngan = "User"; // Dự phòng
+                    if($get_name && $get_name->num_rows > 0) {
+                        $row_name = $get_name->fetch_assoc();
+                        $mang_ten = explode(' ', trim($row_name['ho_ten']));
+                        $ten_ngan = end($mang_ten); // Lấy chữ cuối cùng
+                    }
+                ?>
+                    <a href="profile.php" style="text-decoration: none;"> 
+                        <button class="btn-user" style="color: #b58b5a; font-weight: bold; border-color: #b58b5a;">
+                            <?php echo $ten_ngan; ?> <i class="fa-solid fa-circle-user"></i>
+                        </button>
+                    </a>
+                <?php } else { ?>
+                    <a href="login.php" style="text-decoration: none;"> 
+                        <button class="btn-user">User <i class="fa-solid fa-circle-user"></i></button>
+                    </a>
+                <?php } ?>
+            </div>
+        </header>
+
+        <nav class="main-nav">
+            <ul>
+                <li><a href="index.php">TRANG CHỦ</a></li>
+                <li class="dropdown">
+                    <a href="#">THƯƠNG HIỆU <i class="fa fa-caret-down"></i></a>
+                    <ul class="dropdown-content">
+                        <li><a href="all_rolex.php">ROLEX</a></li>
+                        <li><a href="all_omega.php">OMEGA</a></li>
+                        <li><a href="all_casio.php">CASIO</a></li>
+                        <li><a href="all_seiko.php">SEIKO</a></li>
+                        <li><a href="all_hublot.php">HUBLOT</a></li>
+                    </ul>
+                </li>
+                <li class="dropdown">
+                    <a href="#">SẢN PHẨM <i class="fa fa-caret-down"></i></a>
+                    <ul class="dropdown-content">
+                        <li><a href="Dongho_nam.php">DÀNH CHO NAM</a></li>
+                        <li><a href="Dongho_nu.php">DÀNH CHO NỮ</a></li>
+                    </ul>
+                </li>
+                <li><a href="explore.php">KHÁM PHÁ</a></li>
+                <li><a href="contact.php" style="color: #b58b5a !important; font-weight: bold !important;">LIÊN HỆ</a></li>
+
+                <li class="nav-icons">
+                    <div class="search-box">
+                         <form action="search.php" method="GET">
+                            <input type="text" name="query" placeholder="Bạn tìm gì..." class="search-input">
+                            <button type="submit" class="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+                        </form>
+                    </div>
+                    <a href="cart.php" class="icon-cart">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                        <span class="cart-text">Giỏ hàng</span>
+                     </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    
+    <div class="contact-page-container">
+        <h2 class="contact-title">Liên hệ với chúng tôi</h2>
+        <p class="contact-subtitle">TIMELESS luôn sẵn sàng lắng nghe và hỗ trợ quý khách hàng 24/7.</p>
+        <div class="contact-wrapper">
+            <div class="contact-info-col">
+                <div class="info-item">
+                    <div class="info-icon"><i class="fa-solid fa-location-dot"></i></div>
+                    <div class="info-text">
+                        <h4>Showroom Chính</h4>
+                        <p>03-05 Pasteur, Phường Nguyễn Thái Bình, Quận 1, TP. Hồ Chí Minh</p>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon"><i class="fa-solid fa-phone"></i></div>
+                    <div class="info-text">
+                        <h4>Hotline Hỗ Trợ</h4>
+                        <p>082 554 9816 (Zalo / Viber / Call)</p>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon"><i class="fa-solid fa-envelope"></i></div>
+                    <div class="info-text">
+                        <h4>Email Phản Hồi</h4>
+                        <p>htha4067@gmail.com</p>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon"><i class="fa-regular fa-clock"></i></div>
+                    <div class="info-text">
+                        <h4>Giờ Mở Cửa</h4>
+                        <p>Thứ 2 - Chủ Nhật: 08:30 - 21:00</p>
+                    </div>
+                </div>
+                
+                <div class="map-container" style="margin-top: 20px; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.513274106207!2d106.69907381480081!3d10.771944792324628!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f40a3b3b15f%3A0x1288b5a3297a8e57!2zMDMgUGFzdGV1ciwgTmd1eễnIFRow6FpIELDrG5oLCBRdeG6rW4gMSwgVGjDoG5oIHBo4buRIEjhu5MgQ2jDrSBNaW5o!5e0!3m2!1svi!2s!4v1700000000000!5m2!1svi!2s" width="100%" height="250" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+
+            </div>
+            <div class="contact-form-col">
+                <h3>Gửi lời nhắn</h3>
+                <form action="contact.php" method="POST">
+                    <div class="form-group">
+                        <label>Họ và tên của bạn</label>
+                        <input type="text" name="ho_ten" placeholder="Nhập họ tên đầy đủ..." required>
+                    </div>
+                    <div class="form-group">
+                        <label>Số điện thoại</label>
+                        <input type="tel" name="so_dien_thoai" placeholder="Nhập số điện thoại liên hệ..." required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" placeholder="Nhập địa chỉ email..." required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nội dung cần hỗ trợ</label>
+                        <textarea name="noi_dung" placeholder="Bạn đang quan tâm sản phẩm nào hoặc cần hỗ trợ vấn đề gì..." required></textarea>
+                    </div>
+                    <button type="submit" name="gui_lien_he" class="btn-submit-contact">Gửi yêu cầu ngay</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-left">
+            <div class="footer-logo">
+                <img src="image/logo.png" alt="Timeless">
+            </div>
+            <h3 class="footer-title">TIMELESS</h3>
+            <div class="footer-line"></div>
+            <p>03-05 Pasteur, P. Nguyễn Thái Bình, Quận 1, TPHCM</p>
+            <p><i class="fa fa-phone"></i> 0825549816</p>
+            <p class="footer-desc">
+                TIMELESS CHUYÊN CUNG CẤP – PHÂN PHỐI ĐỒNG HỒ CHÍNH HÃNG NHẬP KHẨU TỪ CHÂU ÂU
+            </p>
+            <p><i class="fa fa-envelope"></i> htha4067@gmail.com</p>
+            <p class="copyright">Bản quyền 2026</p>
+        </div>
+        <div class="footer-right">
+        
+        <div class="footer-column">
+            <h4>VỀ CHÚNG TÔI</h4>
+            <ul>
+                <li><a href="index.php">Trang chủ</a></li> 
+                <li><a href="contact.php">Liên hệ</a></li>
+                <li><a href="explore.php">Kênh truyền thông lớn nhất</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-column">
+            <h4>CHÍNH SÁCH KHÁCH HÀNG</h4> <ul>
+<li><a href="chinh_sach.php?type=trahang">Chính sách đổi trả hàng</a></li>
+<li><a href="chinh_sach.php?type=baohanh">Chính sách bảo hành sản phẩm</a></li>
+<li><a href="chinh_sach.php?type=vanchuyen">Chính sách vận chuyển</a></li>
+<li><a href="chinh_sach.php?type=dieukhoan">Điều khoản sử dụng</a></li>
+<li><a href="chinh_sach.php?type=thanhtoan">Chính sách thanh toán</a></li>
+                
+                </ul>
+        </div>
+
+        <div class="footer-column">
+            <h4>KHÁM PHÁ THƯƠNG HIỆU</h4>
+            <ul>
+                <li><a href="all_rolex.php">Rolex</a></li>
+                <li><a href="all_hublot.php">Hublot</a></li>
+                <li><a href="all_omega.php">Omega</a></li>
+                <li><a href="all_casio.php">Casio</a></li>
+                <li><a href="all_seiko.php">Seiko</a></li>
+            </ul>
+        </div>
+    </div>
+</footer>
+
+    <script>
+        const smartHeader = document.getElementById('smart-header');
+        if (smartHeader) {
+            let lastScrollTop = 0;
+            window.addEventListener('scroll', function() {
+                let currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+                if (currentScroll > lastScrollTop && currentScroll > 100) {
+                    smartHeader.classList.add('header-hidden');
+                } else {
+                    smartHeader.classList.remove('header-hidden');
+                }
+                lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
+            });
+        }
+    </script>
+
+    <?php include 'thongbao.php'; ?>
+
+</body>
+</html>
