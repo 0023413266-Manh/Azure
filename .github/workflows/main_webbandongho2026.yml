@@ -53,18 +53,10 @@ jobs:
         with:
           name: php-app
       
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_85B0CCA53BBE433E88CB7278863D90B4 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0162F588C6334797A1C270C967CB88F4 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_829B2CDD79A04E309F960FCA9936FE6F }}
-
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
-        id: deploy-to-webapp
         with:
           app-name: 'webbandongho2026'
-          slot-name: 'Production'
-          package: .
+          publish-profile: ${{ secrets.AZUREWEBAPP_PUBLISH_PROFILE }}
+          package: '.'
           
