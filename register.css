@@ -1,0 +1,167 @@
+/* ================= REGISTER CSS (FINAL FIX) ================= */
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+
+body {
+    background-color: #f5f5f5; /* Nền xám sáng (Hết bị đen) */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 30px 0;
+}
+
+.register-container {
+    background: #fff;
+    width: 650px; /* Khung rộng hơn chút cho thoáng */
+    border-radius: 12px;
+    padding: 40px 50px; /* Padding 2 bên rộng ra */
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    text-align: center;
+}
+
+/* --- HEADER --- */
+.header-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+.header-section img { 
+    height: 100px; 
+    object-fit: contain; 
+}
+.header-section h2 { font-size: 28px; font-weight: 700; color: #000; }
+
+/* --- SOCIAL BUTTONS (Vuông bo góc + Hiệu ứng nổi) --- */
+.social-text { color: #666; font-size: 14px; margin-bottom: 15px; }
+.social-group { display: flex; justify-content: center; gap: 25px; margin-bottom: 25px; }
+
+.social-btn {
+    width: 50px; height: 50px;
+    border-radius: 10px; /* Bo góc vuông mềm mại */
+    border: 1px solid #eee;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    cursor: pointer;
+    background: #fff;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05); /* Bóng nhẹ */
+    transition: all 0.3s ease;
+}
+
+/* Hiệu ứng khi di chuột vào (Nổi lên) */
+.social-btn:hover { 
+    transform: translateY(-4px); 
+    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    border-color: #ddd;
+}
+
+.google-icon {
+    background: conic-gradient(from -45deg, #ea4335 110deg, #4285f4 90deg 180deg, #34a853 180deg 270deg, #fbbc05 270deg) 73% 55%/150% 150% no-repeat;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+}
+.fa-facebook { color: #1877f2; }
+
+.divider { color: #666; font-size: 14px; margin-bottom: 30px; }
+
+/* --- FORM --- */
+.form-section { text-align: left; }
+.section-title { font-weight: bold; font-size: 16px; color: #000; margin-bottom: 15px; margin-top: 10px; }
+
+.input-group { margin-bottom: 20px; }
+.input-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #333; }
+
+.input-group input {
+    width: 100%;
+    padding: 14px 15px; /* Ô nhập cao hơn chút */
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    background: #fff;
+}
+.input-group input:focus { border-color: #2b6cb0; box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.1); }
+.password-note { font-size: 12px; color: #666; margin-top: -10px; margin-bottom: 20px; font-style: italic; }
+
+.terms { font-size: 13px; color: #333; line-height: 1.5; margin-bottom: 0; }
+.terms a { color: #2b6cb0; text-decoration: none; font-weight: 600; }
+
+
+/* ================= PHẦN QUAN TRỌNG: FOOTER (KHOẢNG TRỐNG & ĐƯỜNG KẺ) ================= */
+.btn-footer {
+    /* 1. Tạo khoảng trống lớn như ảnh */
+    margin-top: 80px; 
+    
+    /* Khoảng cách từ đường kẻ xuống nút */
+    padding-top: 40px; 
+    
+    display: flex;
+    justify-content: space-between;
+    gap: 30px;
+    position: relative; /* Để vẽ đường kẻ */
+}
+
+/* 2. Vẽ đường kẻ "mờ giống ô vuông bị ẩn" */
+.btn-footer::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    
+    /* Canh giữa đường kẻ */
+    left: 10%; 
+    width: 80%; 
+    
+    /* Chiều cao mảnh (2px) nhưng bo tròn để trông mềm mại */
+    height: 3px; 
+    border-radius: 5px; 
+    
+    /* Hiệu ứng Gradient mờ dần về 2 bên */
+    /* transparent (trong suốt) -> màu xám nhạt (#eee) -> transparent */
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, #e0e0e0 50%, rgba(255,255,255,0) 100%);
+    
+    /* Thêm chút bóng mờ nhẹ để nó nổi lên xíu */
+    opacity: 0.8;
+}
+
+/* --- NÚT BẤM --- */
+.btn {
+    flex: 1;
+    height: 55px; /* Nút cao, dễ bấm */
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: flex; align-items: center; justify-content: center;
+}
+
+/* Nút quay lại: Trắng viền xám */
+.btn-back {
+    background: #fff;
+    border: 1px solid #ccc;
+    color: #000;
+}
+.btn-back:hover {
+    background: #fcfcfc;
+    border-color: #bbb;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* Nút hoàn tất: Xanh đậm */
+.btn-submit {
+    background: #2b6cb0; /* Màu xanh chuẩn */
+    border: none;
+    color: #fff;
+    /* Bóng đổ xuống dưới tạo hiệu ứng 3D */
+    box-shadow: 0 4px 0 #1a4971; 
+}
+.btn-submit:hover {
+    background: #20558a;
+    transform: translateY(2px); /* Ấn xuống nhẹ khi hover */
+    box-shadow: 0 2px 0 #1a4971; /* Bóng nhỏ lại tạo cảm giác nút lún xuống */
+}

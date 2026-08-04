@@ -1240,74 +1240,10 @@ $current = $allData[$type] ?? null;
         .btn-cancel-del:hover { background: #ddd; }
     </style>
 
-    <div class="comment-section">
-        <h3 class="comment-title"><i class="fa-regular fa-comments"></i> Bình luận và Đánh giá</h3>
-        
-        <?php if(isset($_SESSION['user_id'])): ?>
-            <form action="../action_binhluan.php" method="POST" class="comment-form">
-                <input type="hidden" name="id_san_pham" value="<?php echo $row['id']; ?>">
-                <textarea name="noi_dung" placeholder="Chia sẻ cảm nhận của bạn về sản phẩm này..." required></textarea>
-                <button type="submit" name="submit_comment"><i class="fa-solid fa-paper-plane"></i> Gửi bình luận</button>
-            </form>
-        <?php else: ?>
-            <div class="login-prompt">
-                Vui lòng <a href="../login.php">Đăng nhập</a> hoặc <a href="../login.php">Đăng ký</a> để tham gia bình luận về sản phẩm.
-            </div>
-        <?php endif; ?>
-
-        <div class="comment-list">
-            <?php
-            $sp_id_hien_tai = $row['id'];
-            $current_user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
-            
-            // Lấy bình luận từ CSDL
-            $sql_bl = "SELECT b.*, n.ho_ten 
-                       FROM binh_luan b 
-                       JOIN nguoi_dung n ON b.id_nguoi_dung = n.id 
-                       WHERE b.id_san_pham = $sp_id_hien_tai AND b.trang_thai = 'Hiển thị' 
-                       ORDER BY b.id DESC";
-            $result_bl = $conn->query($sql_bl);
-            
-            if($result_bl && $result_bl->num_rows > 0):
-                while($bl = $result_bl->fetch_assoc()):
-            ?>
-                <div class="comment-item" id="comment-<?php echo $bl['id']; ?>">
-                    <div class="comment-avatar"><i class="fa-solid fa-user"></i></div>
-                    <div class="comment-content">
-                        <div class="comment-name">
-                            <?php echo htmlspecialchars($bl['ho_ten']); ?>
-                            <span class="comment-date"><?php echo date('d/m/Y H:i', strtotime($bl['ngay_binh_luan'])); ?></span>
-                        </div>
-                        
-                        <div class="comment-text" id="text-<?php echo $bl['id']; ?>">
-                            <?php echo nl2br(htmlspecialchars($bl['noi_dung'])); ?>
-                        </div>
-
-                        <?php if($current_user_id == $bl['id_nguoi_dung']): ?>
-                            <div class="comment-actions">
-                                <button onclick="showEditBox(<?php echo $bl['id']; ?>)"><i class="fa-solid fa-pen"></i> Sửa</button>
-                                <button class="btn-delete" onclick="deleteComment(<?php echo $bl['id']; ?>)"><i class="fa-solid fa-trash"></i> Xóa</button>
-                            </div>
-
-                            <div class="edit-box" id="edit-box-<?php echo $bl['id']; ?>">
-                                <textarea id="edit-input-<?php echo $bl['id']; ?>"><?php echo htmlspecialchars($bl['noi_dung']); ?></textarea>
-                                <div>
-                                    <button class="btn-save-edit" onclick="saveEdit(<?php echo $bl['id']; ?>)">Lưu thay đổi</button>
-                                    <button class="btn-cancel-edit" onclick="hideEditBox(<?php echo $bl['id']; ?>)">Hủy</button>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-
-                    </div>
-                </div>
-            <?php 
-                endwhile;
-            else: 
-            ?>
-                <p id="no-comment-msg" style="text-align: center; color: #888; font-style: italic;">Chưa có bình luận nào. Hãy là người đầu tiên đánh giá sản phẩm này!</p>
-            <?php endif; ?>
-        </div>
-    </div>
+<?php 
+$sp_id = $row['id'];
+include 'module_danh_gia.php'; 
+?>
     
     <div id="deleteModal" class="glass-modal">
         <div class="glass-modal-content">
@@ -1319,6 +1255,8 @@ $current = $allData[$type] ?? null;
             <button class="btn-cancel-del" onclick="document.getElementById('deleteModal').style.display='none'">Hủy</button>
         </div>
     </div>
+
+    
     <footer class="footer">
         <div class="footer-left">
             <div class="footer-logo"><img src="../image/logo.png" alt="Timeless"></div>

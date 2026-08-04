@@ -2,6 +2,49 @@
 session_start();
 include 'admin/connect.php';
 
+// -------------------------------------------------------------
+// HÀM KIỂM DUYỆT NỘI DUNG TỰ ĐỘNG BẰNG AZURE AI CONTENT SAFETY
+// -------------------------------------------------------------
+function checkContentSafetyAzure($text) {
+    $azure_endpoint = "https://content-safety-ktnddanggia.cognitiveservices.azure.com/"; 
+    $azure_key      = "6kA4cl4n6xPfiMen88YHq95pZRBVX2JRB7XC5uCkIzJ6nkMl5RKiJQQJ99CHACqBBLyXJ3w3AAAHACOGT7LX"; 
+
+    $url = rtrim($azure_endpoint, '/') . "/contentsafety/text:analyze?api-version=2023-10-01";
+
+    $data = array(
+        "text" => $text,
+        "categories" => array("Hate", "SelfHarm", "Sexual", "Violence")
+    );
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 5); // Timeout 5s
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json',
+        'Ocp-Apim-Subscription-Key: ' . $azure_key
+    ));
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode == 200) {
+        $result = json_decode($response, true);
+        if (isset($result['categoriesAnalysis'])) {
+            foreach ($result['categoriesAnalysis'] as $category) {
+                // Severity > 0 là phát hiện vi phạm
+                if ($category['severity'] > 0) { 
+                    return false; // NỘI DUNG VI PHẠM
+                }
+            }
+        }
+    }
+
+    return true; // AN TOÀN
+}
+
 // XỬ LÝ KHI KHÁCH BẤM GỬI LỜI NHẮN
 if (isset($_POST['gui_lien_he'])) {
     $ho_ten = $conn->real_escape_string($_POST['ho_ten']);
@@ -9,6 +52,18 @@ if (isset($_POST['gui_lien_he'])) {
     $email = $conn->real_escape_string($_POST['email']);
     $noi_dung = $conn->real_escape_string($_POST['noi_dung']);
 
+    // 🛡️ BẢO VỆ AI: BẮT ĐẦU KIỂM DUYỆT NỘI DUNG LIÊN HỆ
+    if (!empty($noi_dung)) {
+        $is_safe = checkContentSafetyAzure($noi_dung);
+        if (!$is_safe) {
+            $_SESSION['toast_msg'] = "Nội dung lời nhắn chứa từ ngữ xúc phạm hoặc vi phạm tiêu chuẩn cộng đồng!";
+            $_SESSION['toast_type'] = "error";
+            header("Location: contact.php");
+            exit();
+        }
+    }
+
+    // Nếu an toàn -> Lưu CSDL
     $sql_insert = "INSERT INTO lien_he (ho_ten, so_dien_thoai, email, noi_dung) 
                    VALUES ('$ho_ten', '$so_dien_thoai', '$email', '$noi_dung')";
     

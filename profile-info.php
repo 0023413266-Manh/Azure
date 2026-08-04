@@ -199,11 +199,12 @@ $tich_luy = $count_order['sum_money'] ? number_format($count_order['sum_money'],
         <div class="main-content">
             <div class="sidebar">
                 <ul>
+                    <li><a href="index.php"><i class="fa fa-arrow-left"></i> Trang chủ</a></li>
                     <li><a href="profile.php"><i class="fa fa-home"></i> Tổng quan</a></li>
                     <li><a href="profile-history.php"><i class="fa fa-history"></i> Lịch sử mua hàng</a></li>
                     <li><a href="profile-info.php" class="active"><i class="fa fa-user"></i> Thông tin tài khoản</a></li>
-                   <li><a href="chinh_sach.php?type=baohanh"><i class="fa fa-file-alt"></i> Chính sách bảo hành</a></li>
-                    <li><a href="profile.php?tab=feedback"><i class="fa fa-envelope"></i> Góp ý - Phản hồi</a></li>
+                   <li><a href="bao_hanh.php"><i class="fa fa-file-alt"></i> Bảo hành sản phẩm</a></li>
+                    <li><a href="profile.php?tab=feedback"><i class="fa fa-envelope"></i> Phản hồi - Hỗ Trợ</a></li>
                     <li><a href="logout.php"><i class="fa fa-sign-out-alt"></i> Đăng xuất</a></li>
                 </ul>
             </div>

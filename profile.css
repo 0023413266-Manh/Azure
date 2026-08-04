@@ -1,0 +1,561 @@
+/* ================= THIẾT LẬP CHUNG ================= */
+html {
+    overflow-y: scroll;
+    /* BẮT BUỘC: Luôn hiện thanh cuộn dọc dù trang ngắn hay dài */
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+body {
+    background-color: #f5f5f5;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+ul {
+    list-style: none;
+}
+
+/* ================= HEADER XANH (RIÊNG CHO TRANG PROFILE) ================= */
+.profile-header {
+    background-color: #6dabea;
+    padding: 20px 10%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #000;
+    height: 100px;
+    /* ---- CÁC DÒNG THÊM MỚI ĐỂ LÀM SMART HEADER ---- */
+    position: fixed;
+    /* Gắn chặt lên màn hình */
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 9999;
+    /* Nổi lên trên mọi thành phần khác */
+    transition: top 0.4s ease-in-out;
+    /* Hiệu ứng trượt mượt mà */
+}
+
+/* Lệnh ẩn Header trượt tuột lên trên 100px (bằng đúng chiều cao của nó) */
+.profile-header.header-hidden {
+    top: -100px;
+}
+
+.header-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: bold;
+    color: #0d1b3e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-logo img {
+    height: 80px;
+}
+
+.search-bar {
+    background: rgba(255, 255, 255, 0.6);
+    padding: 8px 15px;
+    border-radius: 5px;
+    width: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.search-bar input {
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+    font-size: 13px;
+}
+
+.header-cart {
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* ================= BỐ CỤC CHÍNH ================= */
+.container {
+    max-width: 1200px;
+    margin: -10px auto 20px auto;
+    padding: 0 15px;
+}
+
+/* 1. Banner Thông tin User (Phần trắng to ở trên) */
+.user-banner {
+    background: #fff;
+    border-radius: 10px;
+    padding: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    width: 30%;
+}
+
+.user-avatar {
+    width: 60px;
+    height: 60px;
+    background: #555;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 30px;
+}
+
+.user-details h3 {
+    font-size: 18px;
+    margin-bottom: 5px;
+}
+
+.user-details p {
+    color: #888;
+    font-size: 14px;
+}
+
+.user-stat {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    /* Tăng khoảng cách giữa icon và chữ */
+    width: 32%;
+    /* Mở rộng chiều ngang mỗi ô */
+    position: relative;
+    /* Để làm mốc cho thanh kẻ xanh */
+    padding-left: 50px;
+    /* Đẩy nội dung xa thanh kẻ ra */
+}
+
+/* Dùng pseudo-element để vẽ thanh xanh tùy chỉnh độ dài */
+.user-stat::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: -5px;
+    /* Kéo dài lên trên */
+    bottom: -5px;
+    /* Kéo dài xuống dưới */
+    width: 4px;
+    /* Thanh đậm hơn (4px) */
+    background-color: #2b6cb0;
+    border-radius: 2px;
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+    /* Các thuộc tính cũ giữ nguyên */
+    background: #e3effd;
+    border-radius: 50%;
+    color: #2b6cb0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-info h2 {
+    font-size: 20px;
+    margin-bottom: 2px;
+}
+
+.stat-info p {
+    font-size: 13px;
+    color: #666;
+}
+
+/* 2. Phần thân dưới (Chia 2 cột: Menu trái - Nội dung phải) */
+.main-content {
+    display: flex;
+    gap: 20px;
+}
+
+/* Menu bên trái */
+.sidebar {
+    width: 25%;
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    height: fit-content;
+}
+
+.sidebar ul li {
+    margin-bottom: 15px;
+}
+
+.sidebar ul li a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    color: #333;
+    font-weight: 500;
+    padding: 10px;
+    border-radius: 8px;
+    transition: 0.3s;
+}
+
+.sidebar ul li a:hover,
+.sidebar ul li a.active {
+    color: #2b6cb0;
+    background: #f0f7ff;
+    font-weight: bold;
+}
+
+/* Nội dung bên phải */
+.content-area {
+    width: 75%;
+}
+
+/* --- CSS CHO TRANG TỔNG QUAN --- */
+.overview-grid {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    flex: 1;
+    min-width: 200px;
+    min-height: 200px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.card h4 {
+    margin-bottom: 15px;
+    font-size: 15px;
+}
+
+.full-width {
+    width: 100%;
+    flex: 100%;
+    margin-top: 20px;
+}
+
+/* --- CSS CHO TRANG THÔNG TIN TÀI KHOẢN --- */
+.info-section {
+    background: #fff;
+    border-radius: 10px;
+    padding: 30px;
+    margin-bottom: 20px;
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    text-align: left !important;
+    /* Bắt buộc căn trái */
+    letter-spacing: normal !important;
+    /* Bắt buộc chữ bình thường, không giãn */
+    text-transform: none !important;
+    /* Nếu bị viết hoa hết thì dòng này giúp viết thường lại */
+}
+
+.info-row {
+    display: flex;
+    margin-bottom: 20px;
+}
+
+.info-col {
+    width: 50%;
+    padding-right: 20px;
+}
+
+.info-col label {
+    display: block;
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 5px;
+}
+
+.info-col span {
+    display: block;
+    font-weight: 500;
+    font-size: 15px;
+}
+
+.change-pass-link {
+    float: right;
+    color: #2b6cb0;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* --- CSS CHO TRANG LỊCH SỬ MUA HÀNG --- */
+.order-tabs {
+    display: flex;
+    gap: 45px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0;
+    font-size: 14px;
+}
+
+.tab-item {
+    cursor: pointer;
+    color: #666;
+    padding-bottom: 10px;
+}
+
+.tab-item.active {
+    color: #2b6cb0;
+    border-bottom: 2px solid #2b6cb0;
+    font-weight: bold;
+}
+
+.date-filter {
+    display: inline-block;
+    padding: 5px 15px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    font-size: 13px;
+    background: #fff;
+    margin-bottom: 20px;
+}
+
+
+/* --- 2. SỬA KHOẢNG CÁCH LỊCH SỬ MUA HÀNG --- */
+/* Thêm class này vào tiêu đề h3 trong html */
+.history-title {
+    margin-top: 30px;
+    /* Cách xa tab ở trên */
+    margin-bottom: 20px;
+    /* Cách xa ô chọn ngày ở dưới */
+}
+
+/* --- 3. CSS CHO TRANG GÓP Ý - HỖ TRỢ (MỚI) --- */
+.support-section {
+    margin-bottom: 30px;
+}
+
+.section-head {
+    font-weight: bold;
+    margin-bottom: 15px;
+    font-size: 15px;
+}
+
+/* 3 ô thông tin hỗ trợ */
+.support-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.support-card {
+    background: #f0f0f0;
+    /* Nền xám nhẹ */
+    padding: 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.support-icon {
+    width: 50px;
+    height: 50px;
+    background: #cce4ff;
+    /* Xanh dương nhạt */
+    color: #0056b3;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.support-info h4 {
+    font-size: 14px;
+    margin-bottom: 5px;
+    color: #000;
+}
+
+.support-info p {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+}
+
+/* Khu vực Form đánh giá */
+.feedback-area {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+
+.feedback-desc {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+.feedback-box-placeholder {
+    background: #eee;
+    height: 300px;
+    /* Khung to màu xám */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #000;
+    font-weight: 500;
+    font-size: 14px;
+    border-radius: 5px;
+}
+
+
+/* ================= CSS CHO TRANG CHÍNH SÁCH BẢO HÀNH (RIÊNG) ================= */
+.breadcrumb {
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: #555;
+}
+
+.breadcrumb a {
+    color: #333;
+    font-weight: 500;
+}
+
+.breadcrumb span {
+    color: #2b6cb0;
+    font-weight: bold;
+    margin-left: 5px;
+}
+
+.warranty-intro {
+    margin-bottom: 25px;
+    font-size: 14px;
+    line-height: 1.8;
+    color: #000;
+}
+
+.warranty-intro p {
+    margin-bottom: 10px;
+}
+
+.warranty-content {
+    background: #fff;
+    border-radius: 10px;
+    padding: 40px;
+    min-height: 600px;
+    /* Tạo khung trắng dài như ảnh */
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.warranty-content h2 {
+    font-size: 24px;
+    font-weight: bold;
+    color: #000;
+    margin-bottom: 30px;
+}
+
+/* ================= FIX KẾT NỐI CHO PROFILE-HISTORY.PHP ================= */
+
+/* 1. Tạo khoảng trống bên trên để Header Fixed không đè lên nội dung */
+.profile-container {
+    display: flex !important;
+    max-width: 1200px;
+    margin: 120px auto 30px auto !important;
+    /* Margin Top 120px đẩy nội dung xuống dưới Header */
+    padding: 0 15px;
+    gap: 25px;
+    align-items: flex-start;
+}
+
+/* 2. Áp dụng kiểu dáng cho Sidebar bên trái */
+.profile-sidebar {
+    width: 25% !important;
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.profile-avatar {
+    text-align: center;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.profile-avatar i {
+    font-size: 45px;
+    color: #2b6cb0;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.profile-avatar h3 {
+    font-size: 16px;
+    color: #333;
+}
+
+/* Link Menu bên trái */
+.profile-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.menu-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: #333;
+    padding: 10px 12px;
+    border-radius: 8px;
+    transition: 0.3s;
+    text-decoration: none;
+}
+
+.menu-link:hover,
+.menu-link.active {
+    color: #2b6cb0;
+    background: #f0f7ff;
+    font-weight: bold;
+}
+
+/* 3. Cột nội dung bên phải */
+.profile-content {
+    width: 75% !important;
+}
+
+.profile-content h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: #333;
+}

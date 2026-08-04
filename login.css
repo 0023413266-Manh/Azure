@@ -1,0 +1,175 @@
+/* ================= LOGIN CSS (BẢN FIX LỖI) ================= */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.login-container {
+    display: flex;
+    width: 1000px;
+    max-width: 95%;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    min-height: 600px;
+}
+
+/* --- CỘT TRÁI --- */
+.login-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative; /* Quan trọng để nút Back bám vào */
+    background-color: #fff;
+    padding: 40px 40px 120px 40px; /* Thêm 120px ở dưới đáy để đẩy nội dung lên trên */
+}
+
+/* Sửa lại nút Quay lại */
+.back-home {
+    position: absolute;
+    top: 30px;          /* Cách mép trên 30px */
+    left: 30px;         /* Cách mép trái 30px */
+    text-decoration: none !important; /* Bỏ gạch chân */
+    color: #555 !important;           /* Màu xám đen, không bị tím */
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    transition: 0.3s;
+}
+.back-home:hover { color: #000 !important; }
+
+.brand-logo img {
+    height: 150px;
+    width: auto;
+    object-fit: contain;
+    margin-bottom: 15px;
+}
+.brand-logo h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 30px;
+    color: #0d1b3e;
+    letter-spacing: 2px;
+    margin: 0;
+}
+
+.welcome-text { margin-top: 30px; color: #333; }
+.welcome-text h2 {
+    font-size: 20px; font-weight: 500; margin-bottom: 10px; line-height: 1.5;
+}
+.welcome-text p { font-size: 15px; color: #666; }
+
+.decor-img {
+    position: absolute;
+    bottom: -90px; /* Thụt sâu xuống dưới hơn  */
+    left: -80px;   /* Thụt sâu sang trái hơn  */
+    transform: rotate(110deg); /* Xoay nghiêng 110 độ */
+    
+    width: 250px;
+    opacity: 0.1; 
+    pointer-events: none;
+}
+
+/* --- CỘT PHẢI --- */
+.login-right {
+    flex: 1;
+    background-color: #f8f9fa; /* Màu xám sáng nhẹ */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 40px 60px;
+}
+
+.form-title {
+    font-size: 28px; font-weight: 700; margin-bottom: 30px;
+    color: #000; text-align: center;
+}
+
+/* Khối nhập liệu & Con mắt */
+.input-group {
+    margin-bottom: 20px;
+    position: relative; /* Để icon mắt bám theo */
+}
+
+.input-group label {
+    display: block; margin-bottom: 8px;
+    font-weight: 600; font-size: 14px; color: #333;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 15px;
+    padding-right: 40px; /* Chừa chỗ cho icon mắt */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    outline: none;
+    font-size: 14px;
+    background: #fff;
+}
+
+/* Chỉnh vị trí con mắt chuẩn xác */
+#togglePassword {
+    position: absolute;
+    right: 15px;
+    top: 43px; /* Tinh chỉnh để nằm giữa ô input */
+    cursor: pointer;
+    color: #999;
+    font-size: 16px;
+    z-index: 10;
+}
+
+.btn-login {
+    width: 100%; padding: 12px;
+    background-color: #2b6cb0; color: white;
+    border: none; border-radius: 8px;
+    font-size: 16px; font-weight: bold;
+    cursor: pointer; transition: 0.3s;
+    margin-top: 10px;
+}
+.btn-login:hover { background-color: #1a4971; }
+
+.forgot-pass {
+    display: block; text-align: center; margin-top: 15px;
+    color: #2b6cb0; text-decoration: none;
+    font-size: 14px; font-weight: 600;
+}
+
+.divider {
+    display: flex; align-items: center; margin: 25px 0;
+    color: #777; font-size: 13px;
+}
+.divider::before, .divider::after {
+    content: ""; flex: 1; height: 1px; background: #ccc;
+}
+.divider span { margin: 0 10px; }
+
+.social-login {
+    display: flex; justify-content: center; gap: 15px; margin-bottom: 25px;
+}
+
+.social-btn {
+    width: 50px; height: 50px;
+    border: none; border-radius: 10px;
+    cursor: pointer; background: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; transition: 0.3s;
+    text-decoration: none;
+}
+.social-btn:hover { transform: translateY(-3px); }
+
+.btn-facebook { color: #1877f2; }
+
+.signup-link { text-align: center; font-size: 14px; color: #555; }
+.signup-link a { color: red; text-decoration: none; font-weight: bold; }

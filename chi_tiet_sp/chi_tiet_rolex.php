@@ -51,6 +51,58 @@ if (isset($_SESSION['user_id'])) {
             border: none !important;
             outline: none !important;
         }
+    
+        /* CSS cho hệ thống đánh giá */
+        .review-section { max-width: 1200px; margin: 40px auto; padding: 30px; background: #fff; border-radius: 8px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); }
+        .review-title { font-size: 20px; border-bottom: 2px solid #b58b5a; padding-bottom: 10px; margin-bottom: 20px; color: #333; font-family: "Playfair Display", serif; }
+        .review-summary { display: flex; gap: 30px; margin-bottom: 30px; flex-wrap: wrap; }
+        .review-rating-overview { text-align: center; padding: 20px; background: #faf7f2; border-radius: 8px; min-width: 200px; }
+        .review-big-rating { display: flex; align-items: baseline; justify-content: center; gap: 5px; margin-bottom: 10px; }
+        .review-score { font-size: 48px; font-weight: bold; color: #b58b5a; }
+        .review-out-of { font-size: 18px; color: #888; }
+        .review-stars { display: flex; justify-content: center; gap: 5px; margin-bottom: 10px; }
+        .review-total { font-size: 14px; color: #666; }
+        .review-form { flex: 1; min-width: 300px; }
+        .review-stars-input { margin-bottom: 15px; }
+        .review-stars-input label { display: block; margin-bottom: 10px; font-weight: bold; color: #333; }
+        .star-rating { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 5px; }
+        .star-rating input { display: none; }
+        .star-rating label { font-size: 30px; color: #ddd; cursor: pointer; transition: color 0.2s; }
+        .star-rating label:hover,
+        .star-rating label:hover ~ label,
+        .star-rating input:checked ~ label { color: #f39c12; }
+        .review-form textarea { width: 100%; height: 100px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; resize: none; font-family: inherit; outline: none; margin-bottom: 15px; }
+        .review-form textarea:focus { border-color: #b58b5a; }
+        .review-file-upload { margin-bottom: 15px; }
+        .review-file-upload label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .review-file-upload input[type="file"] { padding: 10px; border: 1px dashed #ccc; border-radius: 5px; width: 100%; }
+        .image-preview { margin-top: 10px; }
+        .image-preview img { max-width: 200px; max-height: 200px; border-radius: 5px; border: 1px solid #eee; }
+        .btn-submit-review { background: #b58b5a; color: #fff; border: none; padding: 12px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-submit-review:hover { background: #967045; }
+        .review-notice { padding: 15px; border-radius: 5px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .review-notice i { font-size: 20px; }
+        .review-notice.notice-info { background: #f0f7ff; color: #0056b3; border: 1px solid #cce5ff; }
+        .review-notice.notice-warning { background: #fff5f5; color: #c92a2a; border: 1px solid #ffc9c9; }
+        .review-notice.notice-success { background: #f4fbf7; color: #2b8a3e; border: 1px solid #b2f2bb; }
+        .review-notice a { color: inherit; font-weight: bold; text-decoration: underline; }
+        .review-success-msg { background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #c3e6cb; }
+        .review-error-msg { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #f5c6cb; }
+        .review-list { display: flex; flex-direction: column; gap: 20px; }
+        .review-item { display: flex; gap: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .review-item-header { flex: 1; }
+        .review-user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .review-user-avatar { width: 40px; height: 40px; background: #f0f0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #b58b5a; font-size: 18px; }
+        .review-user-details { display: flex; flex-direction: column; }
+        .review-author { font-weight: bold; color: #333; }
+        .review-date { font-size: 12px; color: #888; }
+        .review-item-stars { display: flex; gap: 3px; margin-bottom: 10px; }
+        .review-item-content { flex: 1; }
+        .review-item-content p { color: #555; line-height: 1.6; margin-bottom: 10px; }
+        .review-item-image img { max-width: 200px; max-height: 200px; border-radius: 5px; border: 1px solid #eee; cursor: pointer; transition: transform 0.2s; }
+        .review-item-image img:hover { transform: scale(1.05); }
+        .review-no-data { text-align: center; padding: 40px; color: #888; }
+        .review-no-data i { font-size: 40px; color: #ddd; margin-bottom: 15px; display: block; }
     </style>
 </head>
 <body>
@@ -1633,87 +1685,81 @@ if (isset($_SESSION['user_id'])) {
         @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .btn-confirm-del { background: #d9534f; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; margin: 10px 5px; }
         .btn-cancel-del { background: #eee; color: #333; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; margin: 10px 5px; }
+    
+        /* CSS cho hệ thống đánh giá */
+        .review-section { max-width: 1200px; margin: 40px auto; padding: 30px; background: #fff; border-radius: 8px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); }
+        .review-title { font-size: 20px; border-bottom: 2px solid #b58b5a; padding-bottom: 10px; margin-bottom: 20px; color: #333; font-family: "Playfair Display", serif; }
+        .review-summary { display: flex; gap: 30px; margin-bottom: 30px; flex-wrap: wrap; }
+        .review-rating-overview { text-align: center; padding: 20px; background: #faf7f2; border-radius: 8px; min-width: 200px; }
+        .review-big-rating { display: flex; align-items: baseline; justify-content: center; gap: 5px; margin-bottom: 10px; }
+        .review-score { font-size: 48px; font-weight: bold; color: #b58b5a; }
+        .review-out-of { font-size: 18px; color: #888; }
+        .review-stars { display: flex; justify-content: center; gap: 5px; margin-bottom: 10px; }
+        .review-total { font-size: 14px; color: #666; }
+        .review-form { flex: 1; min-width: 300px; }
+        .review-stars-input { margin-bottom: 15px; }
+        .review-stars-input label { display: block; margin-bottom: 10px; font-weight: bold; color: #333; }
+        .star-rating { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 5px; }
+        .star-rating input { display: none; }
+        .star-rating label { font-size: 30px; color: #ddd; cursor: pointer; transition: color 0.2s; }
+        .star-rating label:hover,
+        .star-rating label:hover ~ label,
+        .star-rating input:checked ~ label { color: #f39c12; }
+        .review-form textarea { width: 100%; height: 100px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; resize: none; font-family: inherit; outline: none; margin-bottom: 15px; }
+        .review-form textarea:focus { border-color: #b58b5a; }
+        .review-file-upload { margin-bottom: 15px; }
+        .review-file-upload label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .review-file-upload input[type="file"] { padding: 10px; border: 1px dashed #ccc; border-radius: 5px; width: 100%; }
+        .image-preview { margin-top: 10px; }
+        .image-preview img { max-width: 200px; max-height: 200px; border-radius: 5px; border: 1px solid #eee; }
+        .btn-submit-review { background: #b58b5a; color: #fff; border: none; padding: 12px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-submit-review:hover { background: #967045; }
+        .review-notice { padding: 15px; border-radius: 5px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .review-notice i { font-size: 20px; }
+        .review-notice.notice-info { background: #f0f7ff; color: #0056b3; border: 1px solid #cce5ff; }
+        .review-notice.notice-warning { background: #fff5f5; color: #c92a2a; border: 1px solid #ffc9c9; }
+        .review-notice.notice-success { background: #f4fbf7; color: #2b8a3e; border: 1px solid #b2f2bb; }
+        .review-notice a { color: inherit; font-weight: bold; text-decoration: underline; }
+        .review-success-msg { background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #c3e6cb; }
+        .review-error-msg { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #f5c6cb; }
+        .review-list { display: flex; flex-direction: column; gap: 20px; }
+        .review-item { display: flex; gap: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .review-item-header { flex: 1; }
+        .review-user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .review-user-avatar { width: 40px; height: 40px; background: #f0f0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #b58b5a; font-size: 18px; }
+        .review-user-details { display: flex; flex-direction: column; }
+        .review-author { font-weight: bold; color: #333; }
+        .review-date { font-size: 12px; color: #888; }
+        .review-item-stars { display: flex; gap: 3px; margin-bottom: 10px; }
+        .review-item-content { flex: 1; }
+        .review-item-content p { color: #555; line-height: 1.6; margin-bottom: 10px; }
+        .review-item-image img { max-width: 200px; max-height: 200px; border-radius: 5px; border: 1px solid #eee; cursor: pointer; transition: transform 0.2s; }
+        .review-item-image img:hover { transform: scale(1.05); }
+        .review-no-data { text-align: center; padding: 40px; color: #888; }
+        .review-no-data i { font-size: 40px; color: #ddd; margin-bottom: 15px; display: block; }
     </style>
 
-    <div class="comment-section">
-        <h3 class="comment-title"><i class="fa-regular fa-comments"></i> Bình luận và Đánh giá</h3>
-        
-        <?php if(isset($_SESSION['user_id'])): ?>
-            <form action="../action_binhluan.php" method="POST" class="comment-form">
-                <input type="hidden" name="id_san_pham" value="<?php echo $row['id']; ?>">
-                <textarea name="noi_dung" placeholder="Chia sẻ cảm nhận của bạn về sản phẩm này..." required></textarea>
-                <button type="submit" name="submit_comment"><i class="fa-solid fa-paper-plane"></i> Gửi bình luận</button>
-            </form>
-        <?php else: ?>
-            <div class="login-prompt">
-                Vui lòng <a href="../login.php">Đăng nhập</a> hoặc <a href="../login.php">Đăng ký</a> để tham gia bình luận về sản phẩm.
-            </div>
-        <?php endif; ?>
-
-        <div class="comment-list">
-            <?php
-            $sp_id_hien_tai = $row['id'];
-            $current_user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
-            
-            // Lấy bình luận từ CSDL
-            $sql_bl = "SELECT b.*, n.ho_ten 
-                       FROM binh_luan b 
-                       JOIN nguoi_dung n ON b.id_nguoi_dung = n.id 
-                       WHERE b.id_san_pham = $sp_id_hien_tai AND b.trang_thai = 'Hiển thị' 
-                       ORDER BY b.id DESC";
-            $result_bl = $conn->query($sql_bl);
-            
-            if($result_bl && $result_bl->num_rows > 0):
-                while($bl = $result_bl->fetch_assoc()):
-            ?>
-                <div class="comment-item" id="comment-<?php echo $bl['id']; ?>">
-                    <div class="comment-avatar"><i class="fa-solid fa-user"></i></div>
-                    <div class="comment-content">
-                        <div class="comment-name">
-                            <?php echo htmlspecialchars($bl['ho_ten']); ?>
-                            <span class="comment-date"><?php echo date('d/m/Y H:i', strtotime($bl['ngay_binh_luan'])); ?></span>
-                        </div>
-                        
-                        <div class="comment-text" id="text-<?php echo $bl['id']; ?>">
-                            <?php echo nl2br(htmlspecialchars($bl['noi_dung'])); ?>
-                        </div>
-
-                        <?php if($current_user_id == $bl['id_nguoi_dung']): ?>
-                            <div class="comment-actions">
-                                <button onclick="showEditBox(<?php echo $bl['id']; ?>)"><i class="fa-solid fa-pen"></i> Sửa</button>
-                                <button class="btn-delete" onclick="deleteComment(<?php echo $bl['id']; ?>)"><i class="fa-solid fa-trash"></i> Xóa</button>
-                            </div>
-
-                            <div class="edit-box" id="edit-box-<?php echo $bl['id']; ?>">
-                                <textarea id="edit-input-<?php echo $bl['id']; ?>"><?php echo htmlspecialchars($bl['noi_dung']); ?></textarea>
-                                <div>
-                                    <button class="btn-save-edit" onclick="saveEdit(<?php echo $bl['id']; ?>)">Lưu thay đổi</button>
-                                    <button class="btn-cancel-edit" onclick="hideEditBox(<?php echo $bl['id']; ?>)">Hủy</button>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-
-                    </div>
-                </div>
-            <?php 
-                endwhile;
-            else: 
-            ?>
-                <p id="no-comment-msg" style="text-align: center; color: #888; font-style: italic;">Chưa có bình luận nào. Hãy là người đầu tiên đánh giá sản phẩm này!</p>
-            <?php endif; ?>
-        </div>
-    </div>
     
-    <div id="deleteModal" class="glass-modal">
-        <div class="glass-modal-content">
-            <i class="fa-solid fa-circle-exclamation" style="font-size: 40px; color: #d9534f; margin-bottom: 10px;"></i>
-            <h3 style="margin: 0; margin-bottom: 10px;">Xác nhận xóa?</h3>
-            <p style="font-size: 14px; color: #666; margin-bottom: 20px;">Bình luận của bạn sẽ biến mất vĩnh viễn.</p>
-            <input type="hidden" id="temp_del_id">
-            <button class="btn-confirm-del" onclick="processDelete()">Xóa ngay</button>
-            <button class="btn-cancel-del" onclick="document.getElementById('deleteModal').style.display='none'">Hủy</button>
-        </div>
+    
+    
+<?php 
+$sp_id = $row['id'];
+include 'module_danh_gia.php'; 
+?>
+
+<div id="deleteModal" class="glass-modal">
+    <div class="glass-modal-content">
+        <i class="fa-solid fa-circle-exclamation" style="font-size: 40px; color: #d9534f; margin-bottom: 10px;"></i>
+        <h3 style="margin: 0; margin-bottom: 10px;">Xác nhận xóa?</h3>
+        <p style="font-size: 14px; color: #666; margin-bottom: 20px;">Bình luận của bạn sẽ biến mất vĩnh viễn.</p>
+        <input type="hidden" id="temp_del_id">
+        <button class="btn-confirm-del" onclick="processDelete()">Xóa ngay</button>
+        <button class="btn-cancel-del" onclick="document.getElementById('deleteModal').style.display='none'">Hủy</button>
     </div>
+</div>
+
+
+
     <footer class="footer">
         <div class="footer-left">
             <div class="footer-logo"><img src="../image/logo.png" alt="Timeless"></div>
@@ -1914,7 +1960,31 @@ if (isset($_SESSION['user_id'])) {
         }
     </script>
     
-    <?php include '../thongbao.php'; ?>
+    <?php if (file_exists(__DIR__ . '/../thongbao.php')) { include __DIR__ . '/../thongbao.php'; } ?>
 
+
+    <script>
+        // Preview ảnh khi chọn file
+        function previewImage(input) {
+            const preview = document.getElementById("image-preview");
+            preview.innerHTML = "";
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = '<img src="' + e.target.result + '" alt="Preview">';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        
+        // Mở ảnh modal
+        function openImageModal(src) {
+            const modal = document.createElement("div");
+            modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:9999;cursor:pointer;";
+            modal.innerHTML = '<img src="' + src + '" style="max-width:90%;max-height:90%;border-radius:10px;">';
+            modal.onclick = function() { document.body.removeChild(modal); };
+            document.body.appendChild(modal);
+        }
+    </script>
 </body>
 </html>

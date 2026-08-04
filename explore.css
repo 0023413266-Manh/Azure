@@ -1,0 +1,691 @@
+/* ================= TRANG KHÁM PHÁ (EXPLORE / BLOG) ================= */
+.explore-container {
+    max-width: 1200px;
+    margin: 50px auto;
+    padding: 0 20px;
+}
+
+.explore-header {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.explore-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    color: #0d1b3e;
+    margin-bottom: 10px;
+}
+
+.explore-header p {
+    color: #666;
+    font-size: 16px;
+}
+
+/* Bài viết nổi bật (Nằm ngang) */
+.featured-post {
+    display: flex;
+    gap: 40px;
+    align-items: center;
+    margin-bottom: 60px;
+    background: #f9f9f9;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.featured-img {
+    flex: 1;
+    overflow: hidden;
+    height: 400px;
+}
+
+.featured-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.featured-img img:hover {
+    transform: scale(1.05);
+}
+
+.featured-content {
+    flex: 1;
+    padding: 30px 40px 30px 0;
+}
+
+.post-category {
+    color: #b58b5a;
+    font-weight: bold;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+    display: inline-block;
+}
+
+.post-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    color: #333;
+    margin-bottom: 20px;
+    line-height: 1.3;
+}
+
+.post-desc {
+    color: #555;
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 30px;
+}
+
+.btn-readmore {
+    display: inline-flex;
+    padding: 12px 25px;
+    background: #0d1b3e;
+    color: #fff;
+    text-decoration: none;
+    font-weight: bold;
+    border-radius: 5px;
+    transition: 0.3s;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden; /* Không cho mũi tên bay tràn ra ngoài nút */
+}
+
+/* Class này sẽ được JS thêm vào khi người dùng click */
+.btn-readmore.fly-away i {
+    transform: translateX(40px); /* Mũi tên bay sang phải 40px */
+    opacity: 0; /* Mờ dần đi */
+}
+
+.btn-readmore i {
+    transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+.btn-readmore:hover {
+    background: #b58b5a;
+}
+
+/* Lưới bài viết nhỏ (3 cột) */
+.grid-posts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+}
+
+.grid-item {
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    transition: 0.3s;
+}
+
+.grid-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.grid-img {
+    height: 220px;
+    overflow: hidden;
+}
+
+.grid-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: 0.5s ease;
+}
+
+.grid-item:hover .grid-img img {
+    transform: scale(1.05);
+}
+
+.grid-content {
+    padding: 20px;
+}
+
+.grid-content .post-title {
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+.grid-content .post-desc {
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+.post-meta {
+    font-size: 12px;
+    color: #999;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+    display: flex;
+    justify-content: space-between;
+}
+
+
+
+/* ================= TRANG CHI TIẾT BÀI VIẾT (ARTICLE DETAIL) ================= */
+.article-page-container {
+    max-width: 900px; /* Khung bài viết hẹp hơn trang chủ để mắt dễ đọc */
+    margin: 50px auto;
+    padding: 0 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.article-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.article-category {
+    color: #b58b5a;
+    font-weight: bold;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    display: inline-block;
+    margin-bottom: 15px;
+}
+
+.article-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 42px;
+    color: #0d1b3e;
+    line-height: 1.3;
+    margin-bottom: 20px;
+}
+
+.article-meta {
+    font-size: 14px;
+    color: #888;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.article-meta i {
+    margin-right: 5px;
+}
+
+/* Nội dung bài viết */
+.article-content {
+    font-size: 17px;
+    color: #333;
+    line-height: 1.8; /* Khoảng cách dòng rộng rãi dễ đọc */
+}
+
+.article-content p {
+    margin-bottom: 25px;
+}
+
+.article-content h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    color: #0d1b3e;
+    margin-top: 40px;
+    margin-bottom: 15px;
+}
+
+/* Tự động xử lý tất cả hình ảnh trong bài viết */
+.article-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 20px 0;
+    display: block;
+}
+
+.article-image-caption {
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+    font-style: italic;
+    margin-top: -10px;
+    margin-bottom: 30px;
+}
+
+
+
+
+
+
+
+/* ================= HIỆU ỨNG PARALLAX CHO BÀI VIẾT ================= */
+.parallax-box {
+    width: 100vw; 
+    position: relative;
+    left: 50%; 
+    right: 50%; 
+    margin-left: -50vw; 
+    margin-right: -50vw; 
+    box-sizing: border-box; 
+    height: 600px; 
+    background-attachment: fixed; 
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+    margin-top: 50px; 
+    margin-bottom: 50px; 
+}
+
+.parallax-content {
+    color: #fff;
+    text-align: center;
+    padding: 30px;
+    max-width: 700px;
+}
+
+/* DÒNG TRÊN TÊN LÀ "TÍNH BỀN VỮNG" */
+.parallax-content h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 50px !important; /* Ép to hơn dòng dưới rõ rệt */
+    color: #ffffff !important; 
+    margin-top: 0 !important;
+    margin-bottom: 10px !important;
+}
+
+
+/* DÒNG DƯỚI TÊN LÀ "CAM KẾT CHO TƯƠNG LAI" */
+.parallax-content p {
+    font-size: 26px !important; /* Chữ nhỏ hơn dòng trên */
+    line-height: 1.8 !important;
+    color: #ffffff !important; /* Đảm bảo màu trắng tinh */
+    margin-bottom: 0 !important;
+    text-shadow: 2px 2px 10px rgba(0,0,0,0.8); /* Đổ bóng mờ */
+}
+
+
+
+
+
+
+
+/* ================= KHỐI VÀNG VÀ ẢNH LIỀN MẠCH 100% ================= */
+.rolex-gold-fullwidth {
+    width: 100%;
+    background-color: #f4f0ec; 
+    padding: 80px 20px 40px 20px; 
+    box-sizing: border-box;
+}
+
+.rolex-gold-content {
+    max-width: 900px;  
+    margin: 0 auto;    
+    text-align: left;  
+    color: #000;    
+}
+
+.rolex-gold-content p {
+    font-size: 17px;
+    line-height: 1.8;
+    margin-bottom: 15px;
+}
+
+.image-fade-wrapper {
+    position: relative;
+    width: 100%;
+    background-color: #f4f0ec; 
+    margin-top: -2px; 
+}
+
+.image-fade-wrapper::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 250px; 
+    background: linear-gradient(to bottom, #f4f0ec 0%, rgba(244, 240, 236, 0) 100%);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.fullwidth-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+    position: relative;
+    z-index: 1;
+}
+
+/* ================= KHỐI KIM CƯƠNG VÀ ẢNH LIỀN MẠCH 100% ================= */
+.rolex-diamond-fullwidth {
+    width: 100%;
+    background-color: #e4edf5; 
+    padding: 80px 20px 40px 20px; 
+    box-sizing: border-box;
+    margin-top: -2px; 
+    position: relative;
+    z-index: 2; 
+}
+
+.rolex-diamond-content {
+    max-width: 900px;  
+    margin: 0 auto;    
+    text-align: left;  
+    color: #000;    
+}
+
+.rolex-diamond-content p {
+    font-size: 17px;
+    line-height: 1.8;
+    margin-bottom: 15px;
+}
+
+.image-fade-wrapper-diamond {
+    position: relative;
+    width: 100%;
+    background-color: #e4edf5; 
+    margin-top: -2px; 
+}
+
+.image-fade-wrapper-diamond::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 250px; 
+    background: linear-gradient(to bottom, #e4edf5 0%, rgba(228, 237, 245, 0) 100%); 
+    z-index: 2;
+    pointer-events: none;
+}
+
+
+/* ================= KHỐI TRẮNG (CÁC TIÊU CHUẨN) ================= */
+.rolex-standards-section {
+    width: 100%;
+    background-color: #ffffff; 
+    padding: 60px 20px;
+    box-sizing: border-box;
+}
+
+.rolex-standards-content {
+    max-width: 900px; 
+    margin: 0 auto;
+    text-align: left;
+    color: #333;
+}
+
+.rolex-standards-content p.bold-intro {
+    font-size: 17px;
+    line-height: 1.8;
+    font-weight: 700; 
+    color: #000;
+    margin-bottom: 20px;
+}
+
+.rolex-standards-list {
+    list-style-type: disc; 
+    padding-left: 25px;    
+    font-size: 16px;
+    line-height: 1.8;
+    color: #333;
+}
+
+.rolex-standards-list li {
+    margin-bottom: 12px; 
+}
+
+
+/* ================= KHỐI THÉP (NỀN TRẮNG BÌNH THƯỜNG) ================= */
+.rolex-normal-section {
+    width: 100%;
+    background-color: #ffffff; 
+    padding: 60px 20px;
+    box-sizing: border-box;
+}
+
+.rolex-normal-content {
+    max-width: 900px; 
+    margin: 0 auto;
+    text-align: left;
+    color: #333;
+}
+
+.rolex-normal-content p {
+    font-size: 17px;
+    line-height: 1.8;
+    margin-bottom: 15px;
+}
+
+.rolex-normal-image {
+    width: 100%;
+    height: auto;
+    border-radius: 8px; 
+    display: block;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05); 
+    max-width: 700px !important; 
+    margin: 35px auto !important; 
+}
+
+/* ================= TÙY CHỈNH TIÊU ĐỀ ================= */
+.rolex-gold-content h3, 
+.rolex-diamond-content h3, 
+.rolex-normal-content h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 38px;
+    margin-top: 0;
+    margin-bottom: 25px;
+    text-transform: none !important; 
+    color: #000;
+    border-bottom: none !important; 
+    padding-bottom: 0 !important;
+    display: inline-block;
+}
+
+
+
+/* ================= NÚT QUAY LẠI TRÔI NỔI ================= */
+.btn-floating-back {
+    position: fixed;
+    top: 130px; /* Nằm cách viền trên 130px */
+    left: 30px; /* Cách viền trái 30px */
+    width: 45px;
+    height: 45px;
+    background-color: #fff;
+    color: #333;
+    border-radius: 50%; /* Bo tròn xoe */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 18px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    z-index: 999;
+    transition: all 0.3s ease;
+    border: 1px solid #eee;
+}
+
+.btn-floating-back:hover {
+    background-color: #0d1b3e; /* Đổi sang màu xanh khi trỏ chuột */
+    color: #fff;
+    transform: translateX(-5px); /* Nhích nhẹ về bên trái ra hiệu quay lại */
+}
+
+
+
+
+
+
+/* ================= NÚT MŨI TÊN BÊN TRÁI BÀI VIẾT (NẰM NGOÀI LỀ) ================= */
+.article-page-container {
+    position: relative; /* Bắt buộc: Làm mỏ neo để mũi tên bám vào lề */
+    margin-top: 40px;   /* Khoảng thở cho bài viết so với menu */
+}
+
+.explore-container {
+    margin-top: 40px;   /* Khoảng thở cho trang Khám phá */
+}
+
+/* Trong file style.css */
+/* MŨI TÊN TRÊN MENU */
+.header-back-arrow {
+    position: absolute;
+    left: 5%; 
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+    color: #333;
+    text-decoration: none;
+    transition: 0.3s;
+    z-index: 10;
+    padding: 10px;
+}
+
+.header-back-arrow:hover {
+    color: #b58b5a;
+    transform: translateY(-50%) translateX(-5px);
+}
+
+
+
+
+
+
+/* ================= HIỆU ỨNG FULL SCREEN & BLUR BACKGROUND ================= */
+.hero-wrapper {
+    position: relative;
+    height: 200vh; /* Tạo không gian cuộn dài gấp đôi màn hình để có hiệu ứng mờ dần */
+}
+
+.article-hero-banner {
+    position: sticky;
+    top: 0;
+    width: 100vw;
+    height: 100vh; /* Ép ảnh cao đúng bằng màn hình */
+    left: 50%;
+    transform: translateX(-50%);
+    background-image: url('image/baiviet/rolex6.jpg'); 
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Lớp phủ tối mờ dần */
+.article-hero-banner::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.4); /* Độ tối ban đầu */
+    transition: background 0.3s ease;
+    z-index: 1;
+}
+
+/* Khi lướt lên, class này sẽ được JS thêm vào để làm tối nền */
+.article-hero-banner.is-blurred::before {
+    background: rgba(0, 0, 0, 0.8); /* Tối hẳn để đọc chữ */
+    backdrop-filter: blur(8px);    /* Hiệu ứng mờ ảnh phía sau */
+}
+
+.article-hero-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    max-width: 1200px;
+    width: 100%;
+    padding: 0 50px;
+    gap: 50px;
+    opacity: 0; /* Ban đầu ẩn chữ đi */
+    transform: translateY(50px);
+    transition: all 0.8s ease;
+}
+
+/* Khi lướt tới, chữ hiện ra */
+.article-hero-content.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.article-hero-title {
+    flex: 1;
+    color: #fff;
+    font-family: 'Playfair Display', serif;
+    font-size: 48px;
+    line-height: 1.2;
+}
+
+.article-hero-desc {
+    flex: 1.2;
+    color: #e0e0e0;
+    font-size: 18px;
+    line-height: 1.8;
+    text-align: justify;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* ================= LÀM ĐẸP TIÊU ĐỀ CÁC BÀI VIẾT (NÉT HIỆN ĐẠI, VỪA PHẢI) ================= */
+
+/* Tiêu đề chính trên cùng (H1) */
+.article-title {
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important; 
+    font-weight: 700 !important; /* Đã giảm từ 800 xuống 700 cho đỡ béo */
+    font-size: 40px !important;
+    color: #0d1b3e !important;
+    margin-bottom: 15px;
+}
+
+/* Các tiêu đề phụ (H3) bên trong bài viết */
+.article-content h3 {
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    font-weight: 700 !important; /* Đã giảm từ 800 xuống 700 */
+    font-size: 26px !important;
+    color: #0d1b3e !important;
+    margin-top: 50px !important;
+    margin-bottom: 20px !important;
+}
+
+/* ================= ÉP BUỘC CHỮ TRONG ẢNH TRÁI ĐẤT PHẢI TRẮNG VÀ TO ================= */
+.article-content .parallax-content h3 {
+    font-family: 'Playfair Display', serif !important;
+    font-size: 50px !important; /* Tăng to chà bá luôn */
+    color: #ffffff !important; /* Trắng tinh khôi 100% */
+    text-shadow: none !important; /* Ép xóa sạch bóng đen */
+    margin-top: 0 !important;
+    margin-bottom: 10px !important;
+}
+
+.article-content .parallax-content p {
+    font-size: 24px !important; /* Chữ dưới nhỏ hơn hẳn */
+    color: #ffffff !important; /* Trắng tinh khôi */
+    text-shadow: none !important; /* Ép xóa sạch bóng đen */
+    margin-bottom: 0 !important;
+}
+
+
+
+
+
+
+/* ================= ĐỒNG BỘ PHÔNG CHỮ HIỆN ĐẠI CHO TẤT CẢ CÁC MỤC ĐẶC BIỆT ================= */
+.rolex-gold-content h3, 
+.rolex-diamond-content h3, 
+.rolex-normal-content h3,
+.article-content .parallax-content h3 {
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important; /* Đổi hết sang phông không chân */
+    font-weight: 700 !important; /* Độ đậm vừa phải, không bị béo quá */
+}

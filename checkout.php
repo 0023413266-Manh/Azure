@@ -89,35 +89,58 @@ if (isset($_POST['btn_place_order'])) {
                 }
             }
 // =========================================================================
-// ===== GỬI EMAIL XÁC NHẬN - AZURE COMMUNICATION SERVICES =====
+// ===== GỬI EMAIL XÁC NHẬN BẢO HÀNH (KÈM MÃ QR) - AZURE COMMUNICATION SERVICES =====
 try {
     $user_query  = $conn->query("SELECT email FROM nguoi_dung WHERE id = $user_id")->fetch_assoc();
     $email_khach = trim($user_query['email'] ?? '');
- 
+
     if (!empty($email_khach)) {
         include __DIR__ . '/email_logo.php';
         include __DIR__ . '/email_template.php';
- 
+
+        // 1. Tạo Link mã QR chứa thông tin Mã đơn hàng
+        $qr_content = "MADON:" . $id_don_hang;
+        $qr_api_url = "https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=" . urlencode($qr_content);
+
+        // 2. Lấy nội dung Email HTML tiêu chuẩn từ template
+        $base_html = getEmailHtml($ho_ten, $id_don_hang, $logo_base64);
+
+        // 3. Khối HTML hiển thị Mã QR Code Bảo Hành trong Email
+        $qr_html_block = '
+        <div style="text-align: center; margin: 25px 0; padding: 15px; background: #fef9f1; border: 1px dashed #b58b5a; border-radius: 8px;">
+            <h4 style="color: #b58b5a; margin: 0 0 10px 0; font-family: Arial, sans-serif; font-size: 16px;">
+                MÃ QR XÁC NHẬN BẢO HÀNH
+            </h4>
+            <img src="' . $qr_api_url . '" alt="QR Bảo Hành" style="width: 150px; height: 150px; border: 1px solid #ddd; padding: 5px; background: #fff; border-radius: 5px;" />
+            <p style="font-size: 12px; color: #666; margin: 10px 0 0 0; font-family: Arial, sans-serif;">
+                Quý khách vui lòng lưu/chụp ảnh mã QR này để tải lên hệ thống khi gửi Yêu cầu Bảo hành.
+            </p>
+        </div>
+        ';
+
+        // 4. Ghép Mã QR vào cuối Email
+        $final_email_html = $base_html . $qr_html_block;
+
         $acs_endpoint   = 'https://guithongbao-webdongho.unitedstates.communication.azure.com';
         $acs_accesskey  = '6uLkLsQyXlFn2Usw4QFAVV139yuIkrQBrfZp0xmtTA8a9m9tmncKJQQJ99CGACULyCpWm1mkAAAAAZCSeobd';
         $sender_address = 'DoNotReply@a11e9046-d6eb-4c1f-8644-4a7b05c6b749.azurecomm.net';
- 
+
         $email_data = json_encode([
             "senderAddress" => $sender_address,
             "recipients"    => ["to" => [["address" => $email_khach, "displayName" => $ho_ten]]],
             "content"       => [
                 "subject" => "[Timeless Watch] Xac nhan don hang #" . $id_don_hang,
-                "html"    => getEmailHtml($ho_ten, $id_don_hang, $logo_base64)
+                "html"    => $final_email_html
             ]
         ], JSON_UNESCAPED_UNICODE);
- 
+
         $url_path       = '/emails:send?api-version=2023-03-31';
         $host           = parse_url($acs_endpoint, PHP_URL_HOST);
         $date           = gmdate('D, d M Y H:i:s \G\M\T');
         $content_hash   = base64_encode(hash('sha256', $email_data, true));
         $str_to_sign    = "POST\n" . $url_path . "\n" . $date . ";" . $host . ";" . $content_hash;
         $signature      = base64_encode(hash_hmac('sha256', $str_to_sign, base64_decode($acs_accesskey), true));
- 
+
         $ch = curl_init($acs_endpoint . $url_path);
         curl_setopt_array($ch, [
             CURLOPT_POST           => true,
@@ -134,7 +157,7 @@ try {
         $response  = curl_exec($ch);
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
- 
+
         if ($http_code !== 202) {
             error_log("Azure Email Error [$http_code]: " . $response);
         }

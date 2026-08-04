@@ -1085,148 +1085,21 @@ $current = $allData[$type] ?? null;
         
     </style>
 
-    <div class="comment-section">
-        <h3 class="comment-title"><i class="fa-regular fa-comments"></i> Bình luận và Đánh giá</h3>
-        
-        <?php if(isset($_SESSION['user_id'])): ?>
-            <form action="../action_binhluan.php" method="POST" class="comment-form">
-                <input type="hidden" name="id_san_pham" value="<?php echo $row['id']; ?>">
-                <textarea name="noi_dung" placeholder="Chia sẻ cảm nhận của bạn về sản phẩm này..." required></textarea>
-                <button type="submit" name="submit_comment"><i class="fa-solid fa-paper-plane"></i> Gửi bình luận</button>
-            </form>
-        <?php else: ?>
-            <div class="login-prompt">
-                Vui lòng <a href="../login.php">Đăng nhập</a> hoặc <a href="../login.php">Đăng ký</a> để tham gia bình luận về sản phẩm.
-            </div>
-        <?php endif; ?>
-
-        <div class="comment-list">
-            <?php
-            $sp_id_hien_tai = $row['id'];
-            $current_user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
-            
-            // Lấy bình luận từ CSDL
-            $sql_bl = "SELECT b.*, n.ho_ten 
-                       FROM binh_luan b 
-                       JOIN nguoi_dung n ON b.id_nguoi_dung = n.id 
-                       WHERE b.id_san_pham = $sp_id_hien_tai AND b.trang_thai = 'Hiển thị' 
-                       ORDER BY b.id DESC";
-            $result_bl = $conn->query($sql_bl);
-            
-            if($result_bl && $result_bl->num_rows > 0):
-                while($bl = $result_bl->fetch_assoc()):
-            ?>
-                <div class="comment-item" id="comment-<?php echo $bl['id']; ?>">
-                    <div class="comment-avatar"><i class="fa-solid fa-user"></i></div>
-                    <div class="comment-content">
-                        <div class="comment-name">
-                            <?php echo htmlspecialchars($bl['ho_ten']); ?>
-                            <span class="comment-date"><?php echo date('d/m/Y H:i', strtotime($bl['ngay_binh_luan'])); ?></span>
-                        </div>
-                        
-                        <div class="comment-text" id="text-<?php echo $bl['id']; ?>">
-                            <?php echo nl2br(htmlspecialchars($bl['noi_dung'])); ?>
-                        </div>
-
-                        <?php if($current_user_id == $bl['id_nguoi_dung']): ?>
-                            <div class="comment-actions">
-                                <button onclick="showEditBox(<?php echo $bl['id']; ?>)"><i class="fa-solid fa-pen"></i> Sửa</button>
-                                <button class="btn-delete" onclick="deleteComment(<?php echo $bl['id']; ?>)"><i class="fa-solid fa-trash"></i> Xóa</button>
-                            </div>
-
-                            <div class="edit-box" id="edit-box-<?php echo $bl['id']; ?>">
-                                <textarea id="edit-input-<?php echo $bl['id']; ?>"><?php echo htmlspecialchars($bl['noi_dung']); ?></textarea>
-                                <div>
-                                    <button class="btn-save-edit" onclick="saveEdit(<?php echo $bl['id']; ?>)">Lưu thay đổi</button>
-                                    <button class="btn-cancel-edit" onclick="hideEditBox(<?php echo $bl['id']; ?>)">Hủy</button>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-
-                    </div>
-                </div>
-            <?php 
-                endwhile;
-            else: 
-            ?>
-                <p id="no-comment-msg" style="text-align: center; color: #888; font-style: italic;">Chưa có bình luận nào. Hãy là người đầu tiên đánh giá sản phẩm này!</p>
-            <?php endif; ?>
+<?php 
+$sp_id = $row['id'];
+include 'module_danh_gia.php'; 
+?>
+    
+    <div id="deleteModal" class="glass-modal">
+        <div class="glass-modal-content">
+            <i class="fa-solid fa-circle-exclamation" style="font-size: 40px; color: #d9534f; margin-bottom: 10px;"></i>
+            <h3 style="margin: 0; margin-bottom: 10px;">Xác nhận xóa?</h3>
+            <p style="font-size: 14px; color: #666; margin-bottom: 20px;">Bình luận của bạn sẽ biến mất vĩnh viễn.</p>
+            <input type="hidden" id="temp_del_id">
+            <button class="btn-confirm-del" onclick="processDelete()">Xóa ngay</button>
+            <button class="btn-cancel-del" onclick="document.getElementById('deleteModal').style.display='none'">Hủy</button>
         </div>
     </div>
-
-    <script>
-        // 1. Hiện khung sửa
-        function showEditBox(id) {
-            document.getElementById('text-' + id).style.display = 'none';
-            document.getElementById('edit-box-' + id).style.display = 'block';
-        }
-
-        // 2. Ẩn khung sửa
-        function hideEditBox(id) {
-            document.getElementById('edit-box-' + id).style.display = 'none';
-            document.getElementById('text-' + id).style.display = 'block';
-        }
-
-        // 3. Xử lý Gửi Sửa bình luận ngầm
-        function saveEdit(id) {
-            let newContent = document.getElementById('edit-input-' + id).value.trim();
-            if(newContent === '') {
-                alert('Nội dung không được để trống!');
-                return;
-            }
-
-            let formData = new URLSearchParams();
-            formData.append('action', 'edit');
-            formData.append('comment_id', id);
-            formData.append('noi_dung_moi', newContent);
-
-            fetch('../action_binhluan.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: formData
-            })
-            .then(res => res.text())
-            .then(data => {
-                if(data !== 'error') {
-                    // Cập nhật nội dung hiển thị bằng nội dung mới
-                    document.getElementById('text-' + id).innerHTML = data.replace(/\n/g, '<br>');
-                    hideEditBox(id);
-                    if (typeof showGlassPrismToast === "function") showGlassPrismToast('Đã cập nhật bình luận!', 'fa-check', '#28a745');
-                } else {
-                    alert('Lỗi: Bạn không có quyền sửa bình luận này!');
-                }
-            });
-        }
-
-        // 4. Xử lý Xóa bình luận ngầm
-        function deleteComment(id) {
-            if(confirm('Bạn có chắc chắn muốn xóa bình luận này không?')) {
-                let formData = new URLSearchParams();
-                formData.append('action', 'delete');
-                formData.append('comment_id', id);
-
-                fetch('../action_binhluan.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: formData
-                })
-                .then(res => res.text())
-                .then(data => {
-                    if(data.trim() === 'success') {
-                        // Ẩn luôn cái bình luận đó khỏi màn hình bằng hiệu ứng mờ dần
-                        let commentItem = document.getElementById('comment-' + id);
-                        commentItem.style.transition = "opacity 0.5s ease";
-                        commentItem.style.opacity = "0";
-                        setTimeout(() => { commentItem.remove(); }, 500);
-                        
-                        if (typeof showGlassPrismToast === "function") showGlassPrismToast('Đã xóa bình luận!', 'fa-trash', '#888');
-                    } else {
-                        alert('Lỗi: Bạn không có quyền xóa bình luận này!');
-                    }
-                });
-            }
-        }
-    </script>
     
     <footer class="footer">
         <div class="footer-left">

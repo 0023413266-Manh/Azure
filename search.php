@@ -2,30 +2,132 @@
 session_start();
 include 'admin/connect.php'; 
 
-// 1. BẮT CÁC LỆNH TỪ URL (TỪ KHÓA, SẮP XẾP, GIÁ)
+// 1. BẮT CÁC LỆNH TỪ URL
 $search = isset($_GET['query']) ? trim($_GET['query']) : '';
 $sort = isset($_GET['sort']) ? $_GET['sort'] : 'new';
 $price = isset($_GET['price']) ? $_GET['price'] : 'all';
 
-$result_all = null;
+$result_all = []; // Mảng chứa các sản phẩm từ MySQL
 
 if (!empty($search)) {
-    $search_safe = $conn->real_escape_string($search);
-    
-    // 2. XỬ LÝ ĐIỀU KIỆN LỌC GIÁ
-    $price_sql = "";
-    if ($price == 'under10') { $price_sql = " AND gia_ban < 10000000"; } 
-    elseif ($price == '10to50') { $price_sql = " AND gia_ban BETWEEN 10000000 AND 50000000"; } 
-    elseif ($price == 'over50') { $price_sql = " AND gia_ban > 50000000"; }
+    // =========================================================================
+    // 2. KẾT NỐI AZURE AI SEARCH - TỐI ƯU THUẬT TOÁN TÌM KIẾM
+    // =========================================================================
+    $searchService = "webbandongho-search";
+    $apiKey        = "1fZNf5cu6rAANOVvanQlZZQNQKUOBKi8bzP8OjiUFtAzSeCZhQva"; 
+    $indexName     = "products-index";
 
-    // 3. XỬ LÝ ĐIỀU KIỆN SẮP XẾP
-    $order_sql = "ORDER BY id DESC"; 
-    if ($sort == 'asc') { $order_sql = "ORDER BY gia_ban ASC"; } 
-    elseif ($sort == 'desc') { $order_sql = "ORDER BY gia_ban DESC"; }
+    $azureUrl = "https://{$searchService}.search.windows.net/indexes/{$indexName}/docs/search?api-version=2023-11-01";
 
-    // 4. GHÉP CHUỖI TÌM KIẾM (Bọc từ khóa trong ngoặc () để không bị lỗi Logic với AND)
-    $sql = "SELECT * FROM san_pham WHERE (ten_san_pham LIKE '%$search_safe%' OR so_tham_chieu LIKE '%$search_safe%') $price_sql $order_sql";
-    $result_all = $conn->query($sql);
+    // Tách các từ trong chuỗi tìm kiếm
+    $words = array_filter(explode(' ', $search));
+    $wordCount = count($words);
+
+    if ($wordCount == 1) {
+        // NẾU CHỈ GÕ 1 TỪ (Ví dụ: "rolex", "rolexx", "casio")
+        // Dùng Fuzzy Search ~1 để tự sửa lỗi gõ sai chính tả
+        $queryType = 'full';
+        $searchMode = 'any';
+        $finalQuery = $search . '~1'; 
+    } else {
+        // NẾU GÕ FULL TÊN HOẶC NHIỀU TỪ (Ví dụ: "Rolex Submariner Date", "Casio MTP")
+        // Dùng tìm kiếm chuẩn, yêu cầu KHỚP TẤT CẢ TỪ (searchMode = all) để chỉ ra đúng sp đó
+        $queryType = 'simple';
+        $searchMode = 'all'; 
+        $finalQuery = $search;
+    }
+
+    // Chuẩn bị Body gửi lên Azure
+    $postData = json_encode([
+        'search' => $finalQuery,
+        'queryType' => $queryType,
+        'searchMode' => $searchMode,
+        'searchFields' => 'ten_san_pham,mo_ta,thuong_hieu',
+        'select' => 'id',
+        'top' => 50
+    ]);
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $azureUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'api-key: ' . $apiKey
+    ]);
+
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $azureData = json_decode($response, true);
+    $matched_ids = [];
+
+    // Lấy ID sản phẩm khớp
+    if (isset($azureData['value']) && !empty($azureData['value'])) {
+        foreach ($azureData['value'] as $item) {
+            // Lọc bớt kết quả quá lệch (điểm tương đồng @search.score quá thấp)
+            if (isset($item['@search.score']) && $item['@search.score'] < 0.5 && $wordCount > 1) {
+                continue; 
+            }
+            $matched_ids[] = (int)$item['id'];
+        }
+    }
+
+    // Nếu gõ nhiều từ mà tìm bắt buộc (searchMode = all) không ra, thử fallback sang tìm kiếm linh hoạt
+    if (empty($matched_ids) && $wordCount > 1) {
+        $postDataFallback = json_encode([
+            'search' => $search,
+            'queryType' => 'simple',
+            'searchMode' => 'any',
+            'searchFields' => 'ten_san_pham,thuong_hieu',
+            'select' => 'id',
+            'top' => 20
+        ]);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $azureUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $postDataFallback);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'api-key: ' . $apiKey
+        ]);
+        $responseFallback = curl_exec($ch);
+        curl_close($ch);
+
+        $azureDataFallback = json_decode($responseFallback, true);
+        if (isset($azureDataFallback['value']) && !empty($azureDataFallback['value'])) {
+            foreach ($azureDataFallback['value'] as $item) {
+                $matched_ids[] = (int)$item['id'];
+            }
+        }
+    }
+
+    // =========================================================================
+    // 3. TRUY VẤN MYSQL THEO DANH SÁCH ID VỪA LỌC DƯỢC
+    // =========================================================================
+    if (!empty($matched_ids)) {
+        $ids_string = implode(',', $matched_ids);
+
+        // Xử lý điều kiện lọc giá
+        $price_sql = "";
+        if ($price == 'under10') { $price_sql = " AND gia_ban < 10000000"; } 
+        elseif ($price == '10to50') { $price_sql = " AND gia_ban BETWEEN 10000000 AND 50000000"; } 
+        elseif ($price == 'over50') { $price_sql = " AND gia_ban > 50000000"; }
+
+        // Xử lý điều kiện sắp xếp
+        $order_sql = "ORDER BY FIELD(id, $ids_string)"; // Giữ đúng thứ tự ưu tiên độ chính xác từ Azure
+        if ($sort == 'asc') { $order_sql = "ORDER BY gia_ban ASC"; } 
+        elseif ($sort == 'desc') { $order_sql = "ORDER BY gia_ban DESC"; }
+
+        // Query MySQL
+        $sql = "SELECT * FROM san_pham WHERE id IN ($ids_string) $price_sql $order_sql";
+        $result_all = $conn->query($sql);
+    } else {
+        $result_all = null;
+    }
 }
 ?>
 
@@ -38,7 +140,6 @@ if (!empty($search)) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <style>
-    /* BÊ NGUYÊN CSS TỪ TRANG ALL_ROLEX.PHP SANG */
     .hublot-slider-window, .slider-container { width: 100% !important; max-width: 1200px !important; overflow: visible !important; margin: 0 auto !important; }
     .product-grid, .rolex-track, .hublot-track, .omega-track, .slider-track { display: flex !important; flex-wrap: wrap !important; width: 100% !important; transform: none !important; transition: none !important; margin: 0 auto !important; padding: 0 !important; }
     .product-item { flex: 0 0 25% !important; width: 25% !important; max-width: 25% !important; padding: 15px !important; box-sizing: border-box !important; margin-bottom: 30px !important; position: relative !important; transition: transform 0.3s ease; }
@@ -50,7 +151,6 @@ if (!empty($search)) {
     .filter-btn-link.active { background: #b58b5a; color: #fff; border-color: #b58b5a; font-weight: bold; }
     .filter-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 15px; margin-top: 15px; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
     
-    /* CSS RIÊNG CHO SEARCH */
     .brand-badge { display: inline-block; background: #f4f4f4; padding: 4px 10px; font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; color: #555; border-radius: 4px; }
     .empty-search { text-align: center; width: 100%; padding: 50px 0; color: #888; }
     .empty-search i { font-size: 50px; color: #ddd; margin-bottom: 15px; }
@@ -104,7 +204,7 @@ if (!empty($search)) {
     </div>
     <?php endif; ?>
 </div>
- 
+
 <section class="hublot-section" style="padding: 20px 0; overflow: visible; margin-bottom: 80px; min-height: 40vh;">
     <div class="hublot-slider-wrapper" style="display: flex; align-items: center; justify-content: center; max-width: 1300px; margin: 0 auto; position: relative;">
         <div class="hublot-slider-window" style="width: 1100px; overflow: hidden !important; position: relative;">
@@ -176,14 +276,14 @@ if (!empty($search)) {
         </div>
 
         <div class="footer-column">
-            <h4>CHÍNH SÁCH KHÁCH HÀNG</h4> <ul>
-<li><a href="chinh_sach.php?type=trahang">Chính sách đổi trả hàng</a></li>
-<li><a href="chinh_sach.php?type=baohanh">Chính sách bảo hành sản phẩm</a></li>
-<li><a href="chinh_sach.php?type=vanchuyen">Chính sách vận chuyển</a></li>
-<li><a href="chinh_sach.php?type=dieukhoan">Điều khoản sử dụng</a></li>
-<li><a href="chinh_sach.php?type=thanhtoan">Chính sách thanh toán</a></li>
-                
-                </ul>
+            <h4>CHÍNH SÁCH KHÁCH HÀNG</h4> 
+            <ul>
+                <li><a href="chinh_sach.php?type=trahang">Chính sách đổi trả hàng</a></li>
+                <li><a href="chinh_sach.php?type=baohanh">Chính sách bảo hành sản phẩm</a></li>
+                <li><a href="chinh_sach.php?type=vanchuyen">Chính sách vận chuyển</a></li>
+                <li><a href="chinh_sach.php?type=dieukhoan">Điều khoản sử dụng</a></li>
+                <li><a href="chinh_sach.php?type=thanhtoan">Chính sách thanh toán</a></li>
+            </ul>
         </div>
 
         <div class="footer-column">
