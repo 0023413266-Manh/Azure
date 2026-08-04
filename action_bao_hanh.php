@@ -13,8 +13,8 @@ if (!isset($_SESSION['user_id'])) {
 // -------------------------------------------------------------
 function analyzeDocumentAzure($filePath) {
     // ⚠️ SAU NÀY TẠO DỊCH VỤ TRÊN AZURE XONG BẠN ĐIỀN ENDPOINT VÀ KEY VÀO 2 DÒNG NÀY:
-    $azure_endpoint = "https://YOUR-DOC-INTELLIGENCE-NAME.cognitiveservices.azure.com/"; 
-    $azure_key      = "YOUR_AZURE_DOC_KEY_HERE"; 
+    $azure_endpoint = "https://timeless-doc-ai.cognitiveservices.azure.com/"; 
+    $azure_key      = "YBLgMSgLhoU27SWH98R2NMK9kdJ7kJfKSlFxO8i1M8gVT7KkDUvmrJQQJ99CHACqBBLyXJ3w3AAALACOGbftF"; 
 
     $url = rtrim($azure_endpoint, '/') . "/documentintelligence/documentModels/prebuilt-invoice:analyze?api-version=2024-02-29-preview";
 
