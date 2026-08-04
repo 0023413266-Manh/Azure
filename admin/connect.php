@@ -1,17 +1,24 @@
 <?php
-// Thông tin kết nối CSDL
-$host = "localhost";
-$user = "root";       // Tên đăng nhập mặc định của XAMPP
-$password = "";       // Mật khẩu mặc định của XAMPP là để trống
-$database = "timeless"; // Tên database 
+// Tự động phát hiện môi trường Local hay Azure
+if ($_SERVER['HTTP_HOST'] === 'localhost' || $_SERVER['HTTP_HOST'] === '127.0.0.1') {
+    // Local XAMPP
+    $host     = 'localhost';
+    $user     = 'root';
+    $password = '';
+    $database = 'timeless';
+} else {
+    // Azure Production
+    $host     = 'webbandongho-db2026.mysql.database.azure.com';
+    $user     = 'dbadmin';
+    $password = 'Manh2005';
+    $database = 'timeless';
+}
 
-// Tạo kết nối
 $conn = new mysqli($host, $user, $password, $database);
 
-// Kiểm tra kết nối
 if ($conn->connect_error) {
     die("Kết nối Database thất bại: " . $conn->connect_error);
 }
 
-// Bật chế độ tiếng Việt (UTF-8) để chữ không bị lỗi font
 $conn->set_charset("utf8mb4");
+?>
