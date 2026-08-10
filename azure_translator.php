@@ -5,17 +5,17 @@
  * Dự án: Website Đồng hồ Timeless
  */
 
-// =========================================================================
-// 1. CẤU HÌNH THÔNG TIN KẾT NỐI AZURE PORTAL (Đã dán Key & Region)
-// =========================================================================
 require_once __DIR__ . '/env_loader.php';
 
+// 1. CẤU HÌNH THÔNG TIN KẾT NỐI (HỖ TRỢ CẢ XAMPP LẪN AZURE CLOUD)
 if (!defined('AZURE_TRANSLATOR_KEY')) {
-    define('AZURE_TRANSLATOR_KEY', $_ENV['AZURE_TRANSLATOR_KEY'] ?? '');
+    $key = $_ENV['AZURE_TRANSLATOR_KEY'] ?? getenv('AZURE_TRANSLATOR_KEY') ?: '';
+    define('AZURE_TRANSLATOR_KEY', trim($key, " \t\n\r\0\x0B\"'"));
 }
 
 if (!defined('AZURE_TRANSLATOR_REGION')) {
-    define('AZURE_TRANSLATOR_REGION', $_ENV['AZURE_TRANSLATOR_REGION'] ?? 'global');
+    $region = $_ENV['AZURE_TRANSLATOR_REGION'] ?? getenv('AZURE_TRANSLATOR_REGION') ?: 'global';
+    define('AZURE_TRANSLATOR_REGION', trim($region, " \t\n\r\0\x0B\"'"));
 }
 
 
@@ -23,7 +23,11 @@ if (!defined('AZURE_TRANSLATOR_REGION')) {
  * 2. HÀM DỊCH VĂN BẢN THUẦN (Plain Text)
  */
 function azureTranslate($text, $toLang = 'en') {
-    if (empty(trim($text))) {
+    if (empty(trim($text)) || $toLang === 'vi') {
+        return $text;
+    }
+
+    if (empty(AZURE_TRANSLATOR_KEY)) {
         return $text;
     }
 
@@ -40,6 +44,8 @@ function azureTranslate($text, $toLang = 'en') {
         CURLOPT_POSTFIELDS     => $requestBody,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT        => 10,
+        CURLOPT_SSL_VERIFYPEER => false, // BẮT BUỘC BỎ QUA CHECK SSL TRÊN XAMPP
+        CURLOPT_SSL_VERIFYHOST => false,
         CURLOPT_HTTPHEADER     => [
             'Ocp-Apim-Subscription-Key: ' . AZURE_TRANSLATOR_KEY,
             'Ocp-Apim-Subscription-Region: ' . AZURE_TRANSLATOR_REGION,
@@ -63,11 +69,29 @@ function azureTranslate($text, $toLang = 'en') {
 
 
 /**
- * 3. HÀM DỊCH NGUYÊN TRANG HTML (Full Page HTML Translation)
+ * HÀM DỊCH NGUYÊN TRANG HTML (CÓ BỘ NHỚ TẠM CACHE ĐỂ KHÔNG BỊ LẮC)
  */
 function azureTranslateHTML($htmlContent, $toLang = 'en') {
-    if (empty(trim($htmlContent)) || $toLang == 'vi') {
+    if (empty(trim($htmlContent)) || $toLang === 'vi' || empty(AZURE_TRANSLATOR_KEY)) {
         return $htmlContent;
+    }
+
+    // 1. BẬT SESSION NẾU CHƯA CÓ
+    if (session_status() === PHP_SESSION_NONE) {
+        @session_start();
+    }
+
+    // 2. KÍCH THƯỚC BỘ NHỚ CACHE (Tạo mã Hash cho trang)
+    $cacheKey = 'trans_page_' . $toLang . '_' . md5($htmlContent);
+
+    // Nếu đã dịch trang này rồi -> Trả về kết quả ngay lập tức (0.01s - Siêu mượt)
+    if (isset($_SESSION[$cacheKey]) && !empty($_SESSION[$cacheKey])) {
+        return $_SESSION[$cacheKey];
+    }
+
+    // Giới hạn độ dài văn bản gửi tới Azure
+    if (mb_strlen($htmlContent, 'UTF-8') > 45000) {
+        $htmlContent = mb_substr($htmlContent, 0, 45000, 'UTF-8');
     }
 
     $endpoint = "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=" . urlencode($toLang) . "&textType=html";
@@ -82,8 +106,8 @@ function azureTranslateHTML($htmlContent, $toLang = 'en') {
         CURLOPT_POST           => true,
         CURLOPT_POSTFIELDS     => $requestBody,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 15,
-        CURLOPT_SSL_VERIFYPEER => false, // BẮT BUỘC: Giúp chạy mượt trên Localhost XAMPP
+        CURLOPT_TIMEOUT        => 10,
+        CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_SSL_VERIFYHOST => false,
         CURLOPT_HTTPHEADER     => [
             'Ocp-Apim-Subscription-Key: ' . AZURE_TRANSLATOR_KEY,
@@ -94,18 +118,20 @@ function azureTranslateHTML($htmlContent, $toLang = 'en') {
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlError = curl_error($ch);
     curl_close($ch);
 
     if ($httpCode === 200 && $response) {
         $result = json_decode($response, true);
         if (isset($result[0]['translations'][0]['text'])) {
-            return $result[0]['translations'][0]['text'];
+            $translatedHTML = $result[0]['translations'][0]['text'];
+            
+            // LƯU VÀO CACHE CHO CÁC LẦN TẢI TRANG SAU
+            $_SESSION[$cacheKey] = $translatedHTML;
+            
+            return $translatedHTML;
         }
     }
 
-    // --- DEBUG TẠM THỜI: sẽ xoá sau khi tìm ra nguyên nhân ---
-    echo "\n<!-- AZURE TRANSLATE DEBUG: httpCode=$httpCode | curlError=$curlError | response=" . htmlspecialchars(substr($response ?? '', 0, 500)) . " -->\n";
-
     return $htmlContent;
 }
+?>
