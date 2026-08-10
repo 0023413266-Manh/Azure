@@ -1,6 +1,9 @@
 <?php
-session_start();
-include 'admin/connect.php';
+// 1. Khai báo biến đường dẫn & CSS riêng (nếu có)
+$path_prefix = ''; // File nằm ở thư mục gốc
+
+// 2. Nhúng Header chung (Đã bao gồm session_start(), connect DB và Dịch thuật Azure)
+include $path_prefix . 'header.php';
 
 // 1. Nhận biến 'type' từ URL
 $type = isset($_GET['type']) ? $_GET['type'] : 'trahang';
@@ -86,16 +89,6 @@ $policies = [
 if (!array_key_exists($type, $policies)) { $type = 'trahang'; }
 $current_policy = $policies[$type];
 ?>
-
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title><?php echo $current_policy['title']; ?> - Timeless</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    
     <style>
         body { background-color: #f8f9fa; }
         
@@ -173,36 +166,7 @@ $current_policy = $policies[$type];
         .policy-content h3::before { content: '\f058'; font-family: 'Font Awesome 6 Free'; font-weight: 900; font-size: 16px;}
         .policy-content p { color: #555; line-height: 1.8; margin-bottom: 15px; font-size: 15px; text-align: justify;}
     </style>
-</head>
-<body>
 
-<div id="smart-header">
-    <header class="top-header">
-        <div class="logo"><a href="index.php" class="logo-link"><h1>TIMELESS</h1><img src="image/logo.png" alt="Timeless Icon"></a></div>
-        <div class="user-box">
-            <?php if(isset($_SESSION['user_id'])) { 
-                $get_name = $conn->query("SELECT ho_ten FROM nguoi_dung WHERE id = ".$_SESSION['user_id']);
-                $ten_ngan = "User"; if($get_name && $get_name->num_rows > 0) { $mang_ten = explode(' ', trim($get_name->fetch_assoc()['ho_ten'])); $ten_ngan = end($mang_ten); }
-            ?>
-                <a href="profile.php" style="text-decoration: none;"><button class="btn-user" style="color: #b58b5a; font-weight: bold; border-color: #b58b5a;"><?php echo $ten_ngan; ?> <i class="fa-solid fa-circle-user"></i></button></a>
-            <?php } else { ?><a href="login.php" style="text-decoration: none;"><button class="btn-user">User <i class="fa-solid fa-circle-user"></i></button></a><?php } ?>
-        </div>
-    </header>
-
-    <nav class="main-nav">
-        <ul>
-            <li><a href="index.php">TRANG CHỦ</a></li>
-            <li class="dropdown"><a href="#">THƯƠNG HIỆU <i class="fa fa-caret-down"></i></a>
-                <ul class="dropdown-content"><li><a href="all_rolex.php">ROLEX</a></li><li><a href="all_omega.php">OMEGA</a></li><li><a href="all_casio.php">CASIO</a></li><li><a href="all_seiko.php">SEIKO</a></li><li><a href="all_hublot.php">HUBLOT</a></li></ul>
-            </li>
-            <li class="dropdown"><a href="#">SẢN PHẨM <i class="fa fa-caret-down"></i></a>
-                <ul class="dropdown-content"><li><a href="Dongho_nam.php">DÀNH CHO NAM</a></li><li><a href="Dongho_nu.php">DÀNH CHO NỮ</a></li></ul>
-            </li>
-            <li><a href="explore.php">KHÁM PHÁ</a></li><li><a href="contact.php">LIÊN HỆ</a></li>
-            <li class="nav-icons"><div class="search-box"><form action="search.php" method="GET"><input type="text" name="query" placeholder="Bạn tìm gì..." class="search-input"><button type="submit" class="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button></form></div><a href="cart.php" class="icon-cart"><i class="fa-solid fa-cart-shopping"></i><span class="cart-text">Giỏ hàng</span></a></li>
-        </ul>
-    </nav>
-</div>
 
 <div class="policy-container">
     <div class="policy-sidebar">
@@ -334,5 +298,8 @@ $current_policy = $policies[$type];
         });
     }
 </script>
-</body>
-</html>
+<?php
+include 'ai-chatbot.php';
+// 3. FOOTER BẮT BUỘC PHẢI NẰM Ở DÒNG CUỐI CÙNG CỦA FILE
+include 'footer.php'; 
+?>

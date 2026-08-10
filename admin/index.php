@@ -118,5 +118,80 @@ $recent_orders = $conn->query($sql_recent_orders);
         </main>
     </div>
 
+ <!-- THƯ VIỆN SIGNALR & SWEETALERT2 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+// Hàm phát tiếng bíp "Ting Ting"
+function playBeepSound() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.5);
+    } catch (e) {
+        console.log("Audio error:", e);
+    }
+}
+
+// Hàm kết nối Azure SignalR
+async function connectSignalR() {
+    try {
+        // 1. Dùng đường dẫn tương đối ../azure_signalr.php để gọi từ thư mục admin
+        const res = await fetch('../azure_signalr.php?action=negotiate');
+        if (!res.ok) {
+            throw new Error("Không tìm thấy file azure_signalr.php");
+        }
+        const data = await res.json();
+
+        // 2. Cấu hình kết nối WebSockets trực tiếp tới Azure (Bắt buộc cho Serverless)
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl(data.url, {
+                accessTokenFactory: () => data.accessToken,
+                skipNegotiation: true, // RẤT QUAN TRỌNG: Bỏ qua negotiate mặc định của JS
+                transport: signalR.HttpTransportType.WebSockets // Dùng WebSockets trực tiếp
+            })
+            .withAutomaticReconnect()
+            .build();
+
+        // 3. LẮNG NGHE SỰ KIỆN "NewOrderEvent"
+        connection.on("NewOrderEvent", function (order) {
+            console.log("🔔 ĐÃ NHẬN ĐƠN HÀNG MỚI REAL-TIME từ Azure:", order);
+            
+            // Phát âm thanh
+            playBeepSound();
+
+            // Hiển thị Popup góc màn hình
+            Swal.fire({
+                title: '🔔 ĐƠN HÀNG MỚI!',
+                html: `<b>Mã đơn:</b> #${order.order_id}<br><b>Khách hàng:</b> ${order.customer_name}<br><b>Tổng tiền:</b> <span style="color:red; font-weight:bold">${order.total_price}</span>`,
+                icon: 'success',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 10000,
+                timerProgressBar: true
+            });
+        });
+
+        // 4. Bắt đầu kết nối
+        await connection.start();
+        console.log("✅ KẾT NỐI AZURE SIGNALR THÀNH CÔNG! SẴN SÀNG NHẬN ĐƠN HÀNG REAL-TIME.");
+    } catch (err) {
+        console.error("❌ LỖI KẾT NỐI SIGNALR:", err);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", connectSignalR);
+</script>
+
 </body>
 </html>

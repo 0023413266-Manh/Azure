@@ -1,97 +1,10 @@
 <?php 
-    session_start();
-// 1. Nhúng file kết nối Database vào trang danh sách (Từ thư mục gốc trỏ vào thư mục admin)
-    include 'admin/connect.php';
+   $path_prefix = '';
+   include 'header.php';
 ?>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Timeless - Thế giới đồng hồ</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-</head>
-<body>
 
-<div id="smart-header">
-    <header class="top-header">
-            <div class="logo">
-                <a href="index.php" class="logo-link">
-                    <h1>TIMELESS</h1>
-                    <img src="image/logo.png" alt="Timeless Icon">
-                </a>
-            </div>
 
-            <div class="user-box">
-                <?php 
-                // Kiểm tra xem khách đã đăng nhập chưa
-                if(isset($_SESSION['user_id'])) {
-                    // Nếu rồi, chạy thẳng vào Database lôi cái tên ra cho chắc ăn!
-                    $uid = $_SESSION['user_id'];
-                    $get_name = $conn->query("SELECT ho_ten FROM nguoi_dung WHERE id = $uid");
-                    $ten_ngan = "User"; // Mặc định nếu lỡ có lỗi
-                    
-                    if($get_name && $get_name->num_rows > 0) {
-                        $row_name = $get_name->fetch_assoc();
-                        // Dùng hàm explode để chẻ họ tên ra, hàm end() để chộp lấy cái tên cuối cùng
-                        $mang_ten = explode(' ', trim($row_name['ho_ten']));
-                        $ten_ngan = end($mang_ten); 
-                    }
-                ?>
-                    <a href="profile.php" style="text-decoration: none;"> 
-                        <button class="btn-user" style="color: #b58b5a; font-weight: bold; border-color: #b58b5a;">
-                            <?php echo $ten_ngan; ?> <i class="fa-solid fa-circle-user"></i>
-                        </button>
-                    </a>
-                <?php } else { ?>
-                    <a href="login.php" style="text-decoration: none;"> 
-                        <button class="btn-user">User <i class="fa-solid fa-circle-user"></i></button>
-                    </a>
-                <?php } ?>
-            </div>
-        </header>
-
-    <nav class="main-nav">
-        <ul>
-            <li><a href="index.php" style="color: #b58b5a;">TRANG CHỦ</a></li>
-            <li class="dropdown">
-                <a href="#">THƯƠNG HIỆU <i class="fa fa-caret-down"></i></a>
-                <ul class="dropdown-content">
-                    <li><a href="all_rolex.php">ROLEX</a></li>
-                    <li><a href="all_omega.php">OMEGA</a></li>
-                    <li><a href="all_casio.php">CASIO</a></li>
-                    <li><a href="all_seiko.php">SEIKO</a></li>
-                    <li><a href="all_hublot.php">HUBLOT</a></li>
-                </ul>
-            </li>
-
-            <li class="dropdown">
-                <a href="#">SẢN PHẨM <i class="fa fa-caret-down"></i></a>
-                <ul class="dropdown-content">
-                    <li><a href="Dongho_nam.php">DÀNH CHO NAM2</a></li>
-                    <li><a href="Dongho_nu.php">DÀNH CHO NỮ</a></li>
-                </ul>
-            </li>
-            <li><a href="explore.php">KHÁM PHÁ</a></li>
-            <li><a href="contact.php">LIÊN HỆ</a></li>
-
-            <li class="nav-icons">
-                <div class="search-box">
-                     <form action="search.php" method="GET">
-                        <input type="text" name="query" placeholder="Bạn tìm gì..." class="search-input">
-                        <button type="submit" class="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
-                    </form>
-                </div>
-
-                <a href="cart.php" class="icon-cart">
-                    <i class="fa-solid fa-cart-shopping"></i>
-                    <span class="cart-text">Giỏ hàng</span>
-                 </a>
-            </li>
-        </ul>
-    </nav>
-</div> <section class="banner">
+ <section class="banner">
     <div class="banner-slider">
         <div class="banner-item active">
             <img src="image/dh_rolex1.jpg" alt="Rolex Premium 1">
@@ -438,153 +351,171 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+    // 1. Xử lý Banner
     const slides = document.querySelectorAll(".banner-item");
-    let currentSlide = 0;
-    const slideInterval = 3000; 
-
-    function nextSlide() {
-        slides[currentSlide].classList.remove("active");
-        currentSlide = (currentSlide + 1) % slides.length;
-        slides[currentSlide].classList.add("active");
+    if (slides.length > 0) {
+        let currentSlide = 0;
+        const slideInterval = 3000; 
+        function nextSlide() {
+            slides[currentSlide].classList.remove("active");
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.add("active");
+        }
+        setInterval(nextSlide, slideInterval);
     }
-    setInterval(nextSlide, slideInterval);
+
+    // 2. Main Slider Track
+    const track = document.getElementById("sliderTrack");
+    if (track) {
+        const itemsToShow = 4;
+        const originalItems = track.querySelectorAll(".product-item");
+        const totalOriginal = originalItems.length;
+        if (totalOriginal > 0) {
+            const itemWidth = 1100 / itemsToShow; 
+            let index = 0;
+            for (let i = 0; i < Math.min(itemsToShow, totalOriginal); i++) {
+                track.appendChild(originalItems[i].cloneNode(true));
+            }
+            track.style.width = (totalOriginal + itemsToShow) * itemWidth + "px";
+            window.moveSlider = function(step) {
+                index += step;
+                track.style.transition = "transform 0.5s ease";
+                track.style.transform = `translateX(-${index * itemWidth}px)`;
+                if (index >= totalOriginal) {
+                    setTimeout(() => {
+                        track.style.transition = "none"; 
+                        index = 0;
+                        track.style.transform = "translateX(0px)";
+                    }, 500); 
+                }
+                if (index < 0) {
+                    track.style.transition = "none";
+                    index = totalOriginal; 
+                    track.style.transform = `translateX(-${index * itemWidth}px)`;
+                    setTimeout(() => {
+                        track.style.transition = "transform 0.5s ease";
+                        index = totalOriginal - 1;
+                        track.style.transform = `translateX(-${index * itemWidth}px)`;
+                    }, 20); 
+                }
+            };
+        }
+    }
+
+    // 3. Rolex Track
+    const rolexTrack = document.getElementById("rolexTrack");
+    if (rolexTrack) {
+        const rolexItemsToShow = 4;
+        const rolexOriginalItems = rolexTrack.querySelectorAll(".product-item");
+        const rolexTotalOriginal = rolexOriginalItems.length;
+        if (rolexTotalOriginal > 0) {
+            const rolexItemWidth = 1100 / rolexItemsToShow; 
+            let rolexIndex = 0;
+            for (let i = 0; i < Math.min(rolexItemsToShow, rolexTotalOriginal); i++) {
+                rolexTrack.appendChild(rolexOriginalItems[i].cloneNode(true));
+            }
+            rolexTrack.style.width = (rolexTotalOriginal + rolexItemsToShow) * rolexItemWidth + "px";
+            window.moveRolex = function(step) {
+                rolexIndex += step;
+                rolexTrack.style.transition = "transform 0.5s ease";
+                rolexTrack.style.transform = `translateX(-${rolexIndex * rolexItemWidth}px)`;
+                if (rolexIndex >= rolexTotalOriginal) {
+                    setTimeout(() => {
+                        rolexTrack.style.transition = "none"; 
+                        rolexIndex = 0; 
+                        rolexTrack.style.transform = "translateX(0px)";
+                    }, 500); 
+                }
+                if (rolexIndex < 0) {
+                    rolexTrack.style.transition = "none";
+                    rolexIndex = rolexTotalOriginal; 
+                    rolexTrack.style.transform = `translateX(-${rolexIndex * rolexItemWidth}px)`;
+                    setTimeout(() => {
+                        rolexTrack.style.transition = "transform 0.5s ease";
+                        rolexIndex = rolexTotalOriginal - 1;
+                        rolexTrack.style.transform = `translateX(-${rolexIndex * rolexItemWidth}px)`;
+                    }, 20); 
+                }
+            };
+        }
+    }
+
+    // 4. Hublot Track
+    const hublotTrack = document.getElementById("hublotTrack");
+    if (hublotTrack) {
+        const hublotItemsToShow = 4;
+        const hublotOriginalItems = hublotTrack.querySelectorAll(".product-item");
+        const hublotTotalOriginal = hublotOriginalItems.length;
+        if (hublotTotalOriginal > 0) {
+            const hublotItemWidth = 1100 / hublotItemsToShow; 
+            let hublotIndex = 0;
+            for (let i = 0; i < Math.min(hublotItemsToShow, hublotTotalOriginal); i++) {
+                hublotTrack.appendChild(hublotOriginalItems[i].cloneNode(true));
+            }
+            hublotTrack.style.width = (hublotTotalOriginal + hublotItemsToShow) * hublotItemWidth + "px";
+            window.moveHublot = function(step) {
+                hublotIndex += step;
+                hublotTrack.style.transition = "transform 0.5s ease";
+                hublotTrack.style.transform = `translateX(-${hublotIndex * hublotItemWidth}px)`;
+                if (hublotIndex >= hublotTotalOriginal) {
+                    setTimeout(() => {
+                        hublotTrack.style.transition = "none";
+                        hublotIndex = 0;
+                        hublotTrack.style.transform = "translateX(0px)";
+                    }, 500);
+                }
+                if (hublotIndex < 0) {
+                    hublotTrack.style.transition = "none";
+                    hublotIndex = hublotTotalOriginal; 
+                    hublotTrack.style.transform = `translateX(-${hublotIndex * hublotItemWidth}px)`;
+                    setTimeout(() => {
+                        hublotTrack.style.transition = "transform 0.5s ease";
+                        hublotIndex = hublotTotalOriginal - 1;
+                        hublotTrack.style.transform = `translateX(-${hublotIndex * hublotItemWidth}px)`;
+                    }, 20); 
+                }
+            };
+        }
+    }
+
+    // 5. Omega Track
+    const omegaTrack = document.getElementById("omegaTrack");
+    if (omegaTrack) {
+        const omegaItemsToShow = 4;
+        const omegaOriginalItems = omegaTrack.querySelectorAll(".product-item");
+        const omegaTotalOriginal = omegaOriginalItems.length;
+        if (omegaTotalOriginal > 0) {
+            const omegaItemWidth = 1100 / omegaItemsToShow; 
+            let omegaIndex = 0;
+            for (let i = 0; i < Math.min(omegaItemsToShow, omegaTotalOriginal); i++) {
+                omegaTrack.appendChild(omegaOriginalItems[i].cloneNode(true));
+            }
+            omegaTrack.style.width = (omegaTotalOriginal + omegaItemsToShow) * omegaItemWidth + "px";
+            window.moveOmega = function(step) {
+                omegaIndex += step;
+                omegaTrack.style.transition = "transform 0.5s ease";
+                omegaTrack.style.transform = `translateX(-${omegaIndex * omegaItemWidth}px)`;
+                if (omegaIndex >= omegaTotalOriginal) {
+                    setTimeout(() => {
+                        omegaTrack.style.transition = "none"; 
+                        omegaIndex = 0; 
+                        omegaTrack.style.transform = "translateX(0px)";
+                    }, 500);
+                }
+                if (omegaIndex < 0) {
+                    omegaTrack.style.transition = "none";
+                    omegaIndex = omegaTotalOriginal; 
+                    omegaTrack.style.transform = `translateX(-${omegaIndex * omegaItemWidth}px)`;
+                    setTimeout(() => {
+                        omegaTrack.style.transition = "transform 0.5s ease";
+                        omegaIndex = omegaTotalOriginal - 1;
+                        omegaTrack.style.transform = `translateX(-${omegaIndex * omegaItemWidth}px)`;
+                    }, 20); 
+                }
+            };
+        }
+    }
 });
-
-const track = document.getElementById("sliderTrack");
-const itemsToShow = 4;
-const originalItems = track.querySelectorAll(".product-item");
-const totalOriginal = originalItems.length;
-const itemWidth = 1100 / itemsToShow; 
-let index = 0;
-for (let i = 0; i < itemsToShow; i++) {
-    track.appendChild(originalItems[i].cloneNode(true));
-}
-track.style.width = (totalOriginal + itemsToShow) * itemWidth + "px";
-
-function moveSlider(step) {
-    index += step;
-    track.style.transition = "transform 0.5s ease";
-    track.style.transform = `translateX(-${index * itemWidth}px)`;
-    if (index >= totalOriginal) {
-        setTimeout(() => {
-            track.style.transition = "none"; 
-            index = 0;
-            track.style.transform = "translateX(0px)";
-        }, 500); 
-    }
-    if (index < 0) {
-        track.style.transition = "none";
-        index = totalOriginal; 
-        track.style.transform = `translateX(-${index * itemWidth}px)`;
-        setTimeout(() => {
-            track.style.transition = "transform 0.5s ease";
-            index = totalOriginal - 1;
-            track.style.transform = `translateX(-${index * itemWidth}px)`;
-        }, 20); 
-    }
-}
-
-const rolexTrack = document.getElementById("rolexTrack");
-const rolexItemsToShow = 4;
-const rolexOriginalItems = rolexTrack.querySelectorAll(".product-item");
-const rolexTotalOriginal = rolexOriginalItems.length;
-const rolexItemWidth = 1100 / rolexItemsToShow; 
-let rolexIndex = 0;
-for (let i = 0; i < rolexItemsToShow; i++) {
-    rolexTrack.appendChild(rolexOriginalItems[i].cloneNode(true));
-}
-rolexTrack.style.width = (rolexTotalOriginal + rolexItemsToShow) * rolexItemWidth + "px";
-
-function moveRolex(step) {
-    rolexIndex += step;
-    rolexTrack.style.transition = "transform 0.5s ease";
-    rolexTrack.style.transform = `translateX(-${rolexIndex * rolexItemWidth}px)`;
-    if (rolexIndex >= rolexTotalOriginal) {
-        setTimeout(() => {
-            rolexTrack.style.transition = "none"; 
-            rolexIndex = 0; 
-            rolexTrack.style.transform = "translateX(0px)";
-        }, 500); 
-    }
-    if (rolexIndex < 0) {
-        rolexTrack.style.transition = "none";
-        rolexIndex = rolexTotalOriginal; 
-        rolexTrack.style.transform = `translateX(-${rolexIndex * rolexItemWidth}px)`;
-        setTimeout(() => {
-            rolexTrack.style.transition = "transform 0.5s ease";
-            rolexIndex = rolexTotalOriginal - 1;
-            rolexTrack.style.transform = `translateX(-${rolexIndex * rolexItemWidth}px)`;
-        }, 20); 
-    }
-}
-
-const hublotTrack = document.getElementById("hublotTrack");
-const hublotItemsToShow = 4;
-const hublotOriginalItems = hublotTrack.querySelectorAll(".product-item");
-const hublotTotalOriginal = hublotOriginalItems.length;
-const hublotItemWidth = 1100 / hublotItemsToShow; 
-let hublotIndex = 0;
-for (let i = 0; i < hublotItemsToShow; i++) {
-    hublotTrack.appendChild(hublotOriginalItems[i].cloneNode(true));
-}
-hublotTrack.style.width = (hublotTotalOriginal + hublotItemsToShow) * hublotItemWidth + "px";
-
-function moveHublot(step) {
-    hublotIndex += step;
-    hublotTrack.style.transition = "transform 0.5s ease";
-    hublotTrack.style.transform = `translateX(-${hublotIndex * hublotItemWidth}px)`;
-    if (hublotIndex >= hublotTotalOriginal) {
-        setTimeout(() => {
-            hublotTrack.style.transition = "none";
-            hublotIndex = 0;
-            hublotTrack.style.transform = "translateX(0px)";
-        }, 500);
-    }
-    if (hublotIndex < 0) {
-        hublotTrack.style.transition = "none";
-        hublotIndex = hublotTotalOriginal; 
-        hublotTrack.style.transform = `translateX(-${hublotIndex * hublotItemWidth}px)`;
-        setTimeout(() => {
-            hublotTrack.style.transition = "transform 0.5s ease";
-            hublotIndex = hublotTotalOriginal - 1;
-            hublotTrack.style.transform = `translateX(-${hublotIndex * hublotItemWidth}px)`;
-        }, 20); 
-    }
-}
-
-const omegaTrack = document.getElementById("omegaTrack");
-const omegaItemsToShow = 4;
-const omegaOriginalItems = omegaTrack.querySelectorAll(".product-item");
-const omegaTotalOriginal = omegaOriginalItems.length;
-const omegaItemWidth = 1100 / omegaItemsToShow; 
-let omegaIndex = 0;
-for (let i = 0; i < omegaItemsToShow; i++) {
-    omegaTrack.appendChild(omegaOriginalItems[i].cloneNode(true));
-}
-omegaTrack.style.width = (omegaTotalOriginal + omegaItemsToShow) * omegaItemWidth + "px";
-
-window.moveOmega = function(step) {
-    omegaIndex += step;
-    omegaTrack.style.transition = "transform 0.5s ease";
-    omegaTrack.style.transform = `translateX(-${omegaIndex * omegaItemWidth}px)`;
-    if (omegaIndex >= omegaTotalOriginal) {
-        setTimeout(() => {
-            omegaTrack.style.transition = "none"; 
-            omegaIndex = 0; 
-            omegaTrack.style.transform = "translateX(0px)";
-        }, 500);
-    }
-    if (omegaIndex < 0) {
-        omegaTrack.style.transition = "none";
-        omegaIndex = omegaTotalOriginal; 
-        omegaTrack.style.transform = `translateX(-${omegaIndex * omegaItemWidth}px)`;
-        setTimeout(() => {
-            omegaTrack.style.transition = "transform 0.5s ease";
-            omegaIndex = omegaTotalOriginal - 1;
-            omegaTrack.style.transform = `translateX(-${omegaIndex * omegaItemWidth}px)`;
-        }, 20); 
-    }
-};
 </script>
 
 <script>
@@ -601,7 +532,11 @@ window.moveOmega = function(step) {
             lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
         });
     }
-</script>
 
-</body>
-</html>
+<script>
+
+<?php
+include 'ai-chatbot.php';
+// 3. FOOTER BẮT BUỘC PHẢI NẰM Ở DÒNG CUỐI CÙNG CỦA FILE
+include 'footer.php'; 
+?>

@@ -6,10 +6,11 @@ include 'admin/connect.php';
 // HÀM KIỂM DUYỆT NỘI DUNG BẰNG AZURE AI CONTENT SAFETY
 // -------------------------------------------------------------
 function checkContentSafetyAzure($text) {
-    // THÔNG TIN AZURE AI ĐÃ ĐƯỢC CẤU HÌNH TRỰC TIẾP
-    $azure_endpoint = "https://content-safety-ktnddanggia.cognitiveservices.azure.com/"; 
-    $azure_key      = "6kA4cl4n6xPfiMen88YHq95pZRBVX2JRB7XC5uCkIzJ6nkMl5RKiJQQJ99CHACqBBLyXJ3w3AAAHACOGT7LX"; 
+require_once __DIR__ . '/env_loader.php';
 
+// 2. Lấy Endpoint và Key của Azure Content Safety từ file .env
+$azure_endpoint = $_ENV['CONTENT_SAFETY_ENDPOINT'] ?? ''; 
+$azure_key      = $_ENV['CONTENT_SAFETY_KEY'] ?? '';
     $url = rtrim($azure_endpoint, '/') . "/contentsafety/text:analyze?api-version=2023-10-01";
 
     $data = array(

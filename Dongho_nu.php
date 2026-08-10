@@ -1,8 +1,11 @@
 <?php
-session_start();
-include 'admin/connect.php';
+// 1. Khai báo biến đường dẫn
+$path_prefix = ''; // File nằm ở thư mục gốc
 
-// 1. BẮT LỆNH SẮP XẾP VÀ LỌC GIÁ
+// 2. Nhúng Header chung (Đã có session_start(), connect DB và Dịch thuật Azure)
+include 'header.php';
+
+// 3. BẮT LỆNH SẮP XẾP VÀ LỌC GIÁ
 $sort = isset($_GET['sort']) ? $_GET['sort'] : 'new';
 $price = isset($_GET['price']) ? $_GET['price'] : 'all';
 
@@ -31,22 +34,15 @@ $escaped_ref = array_map(function($ref) use ($conn) {
 $sql_ref = implode(',', $escaped_ref);
 
 // Lệnh sắp xếp kết hợp
-$order_sql = "ORDER BY FIELD(so_tham_chieu, $sql_ref)"; // Mặc định
+$order_sql = "ORDER BY FIELD(so_tham_chieu, $sql_ref)"; // Mặc định sắp xếp theo thứ tự mảng
 if ($sort == 'asc') { $order_sql = "ORDER BY gia_ban ASC"; } 
 elseif ($sort == 'desc') { $order_sql = "ORDER BY gia_ban DESC"; }
 
-// 3. TRUY VẤN SQL KẾT HỢP LỌC VÀ SẮP XẾP
+// 5. TRUY VẤN SQL KẾT HỢP LỌC VÀ SẮP XẾP
 $sql = "SELECT * FROM san_pham WHERE so_tham_chieu IN ($sql_ref) $price_sql $order_sql";
 $result = $conn->query($sql);
 ?>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Đồng Hồ Nữ Chính Hãng - Timeless</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    
     <style>
     /* CSS CHUẨN TỪ TRANG ROLEX */
     .hublot-slider-window, .slider-container { width: 100% !important; max-width: 1200px !important; overflow: visible !important; margin: 0 auto !important; }
@@ -60,38 +56,7 @@ $result = $conn->query($sql);
     .filter-btn-link.active { background: #b58b5a; color: #fff; border-color: #b58b5a; font-weight: bold; }
     .filter-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 15px; margin-top: 15px; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
     </style>
-</head>
-<body>
 
-<div id="smart-header">
-    <header class="top-header">
-        <div class="logo"><a href="index.php" class="logo-link"><h1>TIMELESS</h1><img src="image/logo.png"></a></div>
-        <div class="user-box">
-            <?php if(isset($_SESSION['user_id'])) { 
-                $get_name = $conn->query("SELECT ho_ten FROM nguoi_dung WHERE id = ".$_SESSION['user_id']);
-                $ten_ngan = "User"; if($get_name && $get_name->num_rows > 0) { $mang_ten = explode(' ', trim($get_name->fetch_assoc()['ho_ten'])); $ten_ngan = end($mang_ten); }
-            ?>
-                <a href="profile.php" style="text-decoration: none;"><button class="btn-user" style="color: #b58b5a; font-weight: bold; border-color: #b58b5a;"><?php echo $ten_ngan; ?> <i class="fa-solid fa-circle-user"></i></button></a>
-            <?php } else { ?><a href="login.php" style="text-decoration: none;"><button class="btn-user">User <i class="fa-solid fa-circle-user"></i></button></a><?php } ?>
-        </div>
-    </header>
-    <nav class="main-nav">
-        <ul>
-            <li><a href="index.php">TRANG CHỦ</a></li>
-            <li class="dropdown"><a href="#">THƯƠNG HIỆU <i class="fa fa-caret-down"></i></a>
-                <ul class="dropdown-content"><li><a href="all_rolex.php">ROLEX</a></li><li><a href="all_omega.php">OMEGA</a></li><li><a href="all_casio.php">CASIO</a></li><li><a href="all_seiko.php">SEIKO</a></li><li><a href="all_hublot.php">HUBLOT</a></li></ul>
-            </li>
-            <li class="dropdown"><a href="#" style="color: #b58b5a; font-weight: bold;">SẢN PHẨM <i class="fa fa-caret-down"></i></a>
-                <ul class="dropdown-content">
-                    <li><a href="Dongho_nam.php">DÀNH CHO NAM</a></li>
-                    <li><a href="Dongho_nu.php" style="color:#b58b5a;font-weight:bold; background-color: #f9f9f9 !important; padding-left: 25px !important;">DÀNH CHO NỮ</a></li>
-                </ul>
-            </li>
-            <li><a href="explore.php">KHÁM PHÁ</a></li><li><a href="contact.php">LIÊN HỆ</a></li>
-            <li class="nav-icons"><div class="search-box"><form action="search.php" method="GET"><input type="text" name="query" placeholder="Bạn tìm gì..." class="search-input"><button type="submit" class="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button></form></div><a href="cart.php" class="icon-cart"><i class="fa-solid fa-cart-shopping"></i><span class="cart-text">Giỏ hàng</span></a></li>
-        </ul>
-    </nav>
-</div>
 
 <section class="banner">
     <div class="banner-slider">

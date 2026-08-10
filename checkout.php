@@ -1,6 +1,31 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$path_prefix = ''; 
 include 'admin/connect.php';
+// ================= 1. BỘ XỬ LÝ NGÔN NGỮ (KHÔNG CẦN HEADER) =================
+if (isset($_GET['lang'])) {
+    $_SESSION['lang'] = $_GET['lang'];
+    setcookie('site_lang', $_GET['lang'], time() + 86400 * 30, '/');
+    $_COOKIE['site_lang'] = $_GET['lang'];
+}
+$current_lang = $_COOKIE['site_lang'] ?? ($_SESSION['lang'] ?? 'vi');
+
+// Hàm giữ nguyên tham số URL khi đổi ngôn ngữ
+function getLangUrl($lang) {
+    $params = $_GET;
+    $params['lang'] = $lang;
+    return '?' . http_build_query($params);
+}
+
+// Bật bộ hứng HTML dịch tự động nếu không phải Tiếng Việt
+if ($current_lang !== 'vi') {
+    ob_start();
+}
+if (file_exists('azure_translator.php')) {
+    require_once 'azure_translator.php';
+}
 
 // 1. Chặn người chưa đăng nhập
 if (!isset($_SESSION['user_id'])) {
@@ -11,7 +36,7 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 
 // =========================================================================
-// XỬ LÝ LƯU ĐƠN HÀNG VÀO DATABASE & GỬI EMAIL XÁC NHẬN BẰNG AZURE
+// XỬ LÝ LƯU ĐƠN HÀNG VÀO DATABASE & GỬI EMAIL XÁC NHẬN KÈM FILE PDF BẰNG AZURE
 // =========================================================================
 if (isset($_POST['btn_place_order'])) {
     // Chống hack SQL
@@ -36,7 +61,7 @@ if (isset($_POST['btn_place_order'])) {
         
         if ($check_kho && $check_kho['ton_kho'] < $qty) {
             $het_hang = true;
-            $thong_bao_loi .= "Sản phẩm [" . $check_kho['ten_san_pham'] . "] chỉ còn " . $check_kho['ton_kho'] . " chiếc.\\n";
+            $thong_bao_loi .= "Sản phẩm [" . $check_kho['ten_san_pham'] . "] chỉ còn " . $check_kho['ton_kho'] . " chiếc.\n";
         }
     }
     
@@ -46,13 +71,15 @@ if (isset($_POST['btn_place_order'])) {
         header("Location: cart.php");
         exit();
     }
+    
     // ---------------------------------------------------------
-
-    // Tự động lưu địa chỉ & SĐT mới vào Profile của khách
+    // BƯỚC 2: TẠO ĐƠN HÀNG VÀ LƯU CHI TIẾT VÀO DATABASE
+    // ---------------------------------------------------------
+    // 2.1. Tự động lưu địa chỉ & SĐT mới vào Profile của khách
     $conn->query("UPDATE nguoi_dung SET ho_ten = '$ho_ten', so_dien_thoai = '$sdt', dia_chi = '$dia_chi' WHERE id = $user_id");
     $_SESSION['ho_ten'] = $ho_ten; 
     
-    // Tính lại tổng tiền
+    // 2.2. Tính lại tổng tiền
     $tong_tien = 0;
     foreach ($arr_ids as $id_sp) {
         $id_sp = intval($id_sp);
@@ -64,109 +91,174 @@ if (isset($_POST['btn_place_order'])) {
     }
 
     if ($tong_tien > 0) {
+        // 2.3. Tạo đơn hàng chính trong bảng don_hang
         $sql_don_hang = "INSERT INTO don_hang (id_nguoi_dung, tong_tien, trang_thai, dia_chi_giao_hang, sdt_nguoi_nhan) 
                          VALUES ($user_id, $tong_tien, 'Chờ xác nhận', '$dia_chi', '$sdt')";
         
         if ($conn->query($sql_don_hang) === TRUE) {
-            $id_don_hang = $conn->insert_id; 
+            $id_don_hang = $conn->insert_id; // Lấy ID đơn hàng vừa tạo
             
+            $ten_san_pham_arr = []; // Khởi tạo mảng lưu tên các sản phẩm để dùng cho Azure PDF
+            
+            // 2.4. Lưu từng sản phẩm vào bảng chi_tiet_don_hang & trừ kho
             foreach ($arr_ids as $id_sp) {
                 $id_sp = intval($id_sp);
                 $qty = isset($_SESSION['cart'][$id_sp]) ? $_SESSION['cart'][$id_sp] : 1;
-                $sp_info = $conn->query("SELECT gia_ban FROM san_pham WHERE id = $id_sp")->fetch_assoc();
-                $gia = $sp_info['gia_ban'];
+                $sp_info = $conn->query("SELECT ten_san_pham, gia_ban FROM san_pham WHERE id = $id_sp")->fetch_assoc();
                 
-                // Lưu vào chi tiết đơn hàng
-                $conn->query("INSERT INTO chi_tiet_don_hang (id_don_hang, id_san_pham, so_luong, don_gia) 
-                              VALUES ($id_don_hang, $id_sp, $qty, $gia)");
-                
-                // BƯỚC 2: TRỪ SỐ LƯỢNG TRONG KHO
-                $conn->query("UPDATE san_pham SET ton_kho = ton_kho - $qty WHERE id = $id_sp");
+                if ($sp_info) {
+                    $gia = $sp_info['gia_ban'];
+                    $ten_san_pham_arr[] = $sp_info['ten_san_pham'];
+                    
+                    // Lưu vào chi tiết đơn hàng
+                    $conn->query("INSERT INTO chi_tiet_don_hang (id_don_hang, id_san_pham, so_luong, don_gia) 
+                                  VALUES ($id_don_hang, $id_sp, $qty, $gia)");
+                    
+                    // Trừ số lượng tồn kho
+                    $conn->query("UPDATE san_pham SET ton_kho = ton_kho - $qty WHERE id = $id_sp");
 
-                // Mua xong xóa khỏi giỏ
-                if (isset($_SESSION['cart'][$id_sp])) {
-                    unset($_SESSION['cart'][$id_sp]); 
+                    // Xóa sản phẩm khỏi giỏ hàng
+                    if (isset($_SESSION['cart'][$id_sp])) {
+                        unset($_SESSION['cart'][$id_sp]); 
+                    }
                 }
             }
-// =========================================================================
-// ===== GỬI EMAIL XÁC NHẬN BẢO HÀNH (KÈM MÃ QR) - AZURE COMMUNICATION SERVICES =====
-try {
-    $user_query  = $conn->query("SELECT email FROM nguoi_dung WHERE id = $user_id")->fetch_assoc();
-    $email_khach = trim($user_query['email'] ?? '');
 
-    if (!empty($email_khach)) {
-        include __DIR__ . '/email_logo.php';
-        include __DIR__ . '/email_template.php';
+            // Nối danh sách tên sản phẩm thành chuỗi text (dùng cho dữ liệu truyền tới Azure Function)
+            $ten_san_pham_str = implode(', ', $ten_san_pham_arr);
 
-        // 1. Tạo Link mã QR chứa thông tin Mã đơn hàng
-        $qr_content = "MADON:" . $id_don_hang;
-        $qr_api_url = "https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=" . urlencode($qr_content);
+            // =========================================================
+            // BƯỚC 3: 🔔 BẮN THÔNG BÁO SIGNALR REAL-TIME
+            // =========================================================
+            require_once 'azure_signalr.php';
+            $ten_hien_thi = $_SESSION['user_name'] ?? $_SESSION['ten_nguoi_dung'] ?? "Khách hàng #$user_id";
 
-        // 2. Lấy nội dung Email HTML tiêu chuẩn từ template
-        $base_html = getEmailHtml($ho_ten, $id_don_hang, $logo_base64);
+            $order_info = [
+                'order_id'      => $id_don_hang,
+                'customer_name' => $ten_hien_thi,
+                'total_price'   => number_format($tong_tien) . ' VNĐ'
+            ];
+            sendOrderNotification($order_info);
 
-        // 3. Khối HTML hiển thị Mã QR Code Bảo Hành trong Email
-        $qr_html_block = '
-        <div style="text-align: center; margin: 25px 0; padding: 15px; background: #fef9f1; border: 1px dashed #b58b5a; border-radius: 8px;">
-            <h4 style="color: #b58b5a; margin: 0 0 10px 0; font-family: Arial, sans-serif; font-size: 16px;">
-                MÃ QR XÁC NHẬN BẢO HÀNH
-            </h4>
-            <img src="' . $qr_api_url . '" alt="QR Bảo Hành" style="width: 150px; height: 150px; border: 1px solid #ddd; padding: 5px; background: #fff; border-radius: 5px;" />
-            <p style="font-size: 12px; color: #666; margin: 10px 0 0 0; font-family: Arial, sans-serif;">
-                Quý khách vui lòng lưu/chụp ảnh mã QR này để tải lên hệ thống khi gửi Yêu cầu Bảo hành.
-            </p>
-        </div>
-        ';
-
-        // 4. Ghép Mã QR vào cuối Email
-        $final_email_html = $base_html . $qr_html_block;
-
-        $acs_endpoint   = 'https://guithongbao-webdongho.unitedstates.communication.azure.com';
-        $acs_accesskey  = '6uLkLsQyXlFn2Usw4QFAVV139yuIkrQBrfZp0xmtTA8a9m9tmncKJQQJ99CGACULyCpWm1mkAAAAAZCSeobd';
-        $sender_address = 'DoNotReply@a11e9046-d6eb-4c1f-8644-4a7b05c6b749.azurecomm.net';
-
-        $email_data = json_encode([
-            "senderAddress" => $sender_address,
-            "recipients"    => ["to" => [["address" => $email_khach, "displayName" => $ho_ten]]],
-            "content"       => [
-                "subject" => "[Timeless Watch] Xac nhan don hang #" . $id_don_hang,
-                "html"    => $final_email_html
-            ]
-        ], JSON_UNESCAPED_UNICODE);
-
-        $url_path       = '/emails:send?api-version=2023-03-31';
-        $host           = parse_url($acs_endpoint, PHP_URL_HOST);
-        $date           = gmdate('D, d M Y H:i:s \G\M\T');
-        $content_hash   = base64_encode(hash('sha256', $email_data, true));
-        $str_to_sign    = "POST\n" . $url_path . "\n" . $date . ";" . $host . ";" . $content_hash;
-        $signature      = base64_encode(hash_hmac('sha256', $str_to_sign, base64_decode($acs_accesskey), true));
-
-        $ch = curl_init($acs_endpoint . $url_path);
-        curl_setopt_array($ch, [
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => $email_data,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER     => [
-                'Content-Type: application/json',
-                'Date: '                . $date,
-                'x-ms-content-sha256: ' . $content_hash,
-                'Authorization: HMAC-SHA256 SignedHeaders=date;host;x-ms-content-sha256&Signature=' . $signature,
-                'host: '                . $host,
-            ]
-        ]);
-        $response  = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($http_code !== 202) {
-            error_log("Azure Email Error [$http_code]: " . $response);
-        }
-    }
-} catch (Exception $e) {
-    error_log("Email error: " . $e->getMessage());
-}
-// ===== KẾT THÚC GỬI EMAIL =====
             // =========================================================================
+            // BƯỚC 4: 📄 TẠO FILE PDF PHIẾU BẢO HÀNH BẰNG AZURE FUNCTION
+            // =========================================================================
+            $pdf_base64 = "";
+            try {
+                // Lấy thông tin đơn hàng thực tế
+                $payload_pdf = [
+                    'id_don_hang'  => $id_don_hang,
+                    'ho_ten'       => $ho_ten,            // Tên khách nhập ở Form
+                    'sdt'          => $sdt,               // SĐT khách nhập ở Form
+                    'ten_san_pham' => $ten_san_pham_str,  // Tên đồng hồ trong giỏ
+                    'ngay_mua'     => date('d/m/Y')
+                ];
+
+                // 🌐 ĐỊA CHỈ AZURE FUNCTION CHÍNH THỨC
+                $azure_function_url = 'https://timeless-pdf-service-c0cfbuewcfg6c6f0.southeastasia-01.azurewebsites.net/api/GeneratePDF';
+
+                $ch_pdf = curl_init($azure_function_url);
+                curl_setopt_array($ch_pdf, [
+                    CURLOPT_POST           => true,
+                    CURLOPT_POSTFIELDS     => json_encode($payload_pdf, JSON_UNESCAPED_UNICODE),
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+                    CURLOPT_TIMEOUT        => 15,
+                    CURLOPT_SSL_VERIFYPEER => false
+                ]);
+
+                $pdf_response  = curl_exec($ch_pdf);
+                // 🛑 ĐÃ THÊM: Lấy HTTP Code từ Azure Function trả về
+                $http_code_pdf = curl_getinfo($ch_pdf, CURLINFO_HTTP_CODE); 
+                curl_close($ch_pdf);
+
+                if ($http_code_pdf === 200 && !empty($pdf_response)) {
+                    $json_data = json_decode($pdf_response, true);
+                    if (isset($json_data['pdfBase64'])) {
+                        $pdf_base64 = $json_data['pdfBase64'];
+                    } else {
+                        $pdf_base64 = base64_encode($pdf_response);
+                    }
+                } else {
+                    error_log("Lỗi Azure Function PDF [HTTP $http_code_pdf]: " . $pdf_response);
+                }
+
+            } catch (Exception $e) {
+                error_log("Lỗi gọi Azure Function PDF: " . $e->getMessage());
+            }
+// =========================================================================
+            // BƯỚC 5: ✉️ GỬI EMAIL XÁC NHẬN KÈM FILE PDF BẢO HÀNH (AZURE ACS)
+            // =========================================================================
+            try {
+                $user_query  = $conn->query("SELECT email FROM nguoi_dung WHERE id = $user_id")->fetch_assoc();
+                $email_khach = trim($user_query['email'] ?? '');
+
+                if (!empty($email_khach)) {
+                    // 🛑 Dùng require_once để chống trùng lặp hàm
+                    require_once __DIR__ . '/email_logo.php';
+                    require_once __DIR__ . '/email_template.php';
+
+                    $final_email_html = getEmailHtml($ho_ten, $id_don_hang, $logo_base64);
+
+                    require_once __DIR__ . '/env_loader.php';
+
+                    $acs_endpoint   = $_ENV['ACS_ENDPOINT'] ?? '';
+                    $acs_accesskey  = $_ENV['ACS_ACCESS_KEY'] ?? '';
+                    $sender_address = $_ENV['ACS_SENDER_ADDRESS'] ?? '';
+
+                    $payload_data = [
+                        "senderAddress" => $sender_address,
+                        "recipients"    => ["to" => [["address" => $email_khach, "displayName" => $ho_ten]]],
+                        "content"       => [
+                            "subject" => "[Timeless Watch] Xac nhan don hang & Phieu bao hanh #" . $id_don_hang,
+                            "html"    => $final_email_html
+                        ]
+                    ];
+
+                    // 📎 ĐÍNH KÈM PHIẾU BẢO HÀNH PDF VÀO MAIL NẾU CÓ
+                    if (!empty($pdf_base64)) {
+                        $payload_data["attachments"] = [
+                            [
+                                "name"            => "PhieuBaoHanh_Timeless_#" . $id_don_hang . ".pdf",
+                                "contentType"     => "application/pdf",
+                                "contentInBase64" => $pdf_base64
+                            ]
+                        ];
+                    }
+
+                    $email_data = json_encode($payload_data, JSON_UNESCAPED_UNICODE);
+
+                    $url_path     = '/emails:send?api-version=2023-03-31';
+                    $host         = parse_url($acs_endpoint, PHP_URL_HOST);
+                    $date         = gmdate('D, d M Y H:i:s \G\M\T');
+                    $content_hash = base64_encode(hash('sha256', $email_data, true));
+                    $str_to_sign  = "POST\n" . $url_path . "\n" . $date . ";" . $host . ";" . $content_hash;
+                    $signature    = base64_encode(hash_hmac('sha256', $str_to_sign, base64_decode($acs_accesskey), true));
+
+                    $ch = curl_init($acs_endpoint . $url_path);
+                    curl_setopt_array($ch, [
+                        CURLOPT_POST           => true,
+                        CURLOPT_POSTFIELDS     => $email_data,
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_HTTPHEADER     => [
+                            'Content-Type: application/json',
+                            'Date: '                . $date,
+                            'x-ms-content-sha256: ' . $content_hash,
+                            'Authorization: HMAC-SHA256 SignedHeaders=date;host;x-ms-content-sha256&Signature=' . $signature,
+                            'host: '                . $host,
+                        ]
+                    ]);
+                    $response  = curl_exec($ch);
+                    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                    curl_close($ch);
+
+                    if ($http_code !== 202) {
+                        error_log("Azure Email Error [$http_code]: " . $response);
+                    }
+                }
+            } catch (Exception $e) {
+                error_log("Email error: " . $e->getMessage());
+            }
 
             $_SESSION['toast_msg'] = "Chốt đơn thành công! Đồng hồ sắp về tay bạn.";
             $_SESSION['toast_type'] = "success";
@@ -220,26 +312,60 @@ $user_info = $conn->query("SELECT * FROM nguoi_dung WHERE id = $user_id")->fetch
         .btn-confirm { width: 100%; padding: 15px; background: #b58b5a; color: #fff; font-size: 16px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; transition: 0.3s; margin-top: 25px; }
         .btn-confirm:hover { background: #9c764a; }
         .notice-box { background: #fef9f1; border-left: 3px solid #b58b5a; padding: 12px; margin-bottom: 25px; font-size: 13px; color: #666; border-radius: 3px; }
+                     .main-nav ul li a.active-menu {
+            color: #b58b5a !important;
+            font-weight: bold;
+        }
+        .user-box { display: flex; align-items: center; gap: 12px; }
+        .lang-switch { display: flex; align-items: center; gap: 6px; background: #f8f8f8; padding: 4px 10px; border-radius: 20px; border: 1px solid #e0e0e0; font-size: 13px; }
+        .lang-switch a { text-decoration: none; color: #555; font-weight: 600; transition: 0.2s; }
+        .lang-switch a:hover, .lang-switch a.active { color: #b58b5a; }
+        
     </style>
 </head>
+
 <body>
 
-    <div id="smart-header">
-        <header class="top-header" style="background: #fff; padding: 15px 50px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
-            <div class="logo">
-                <a href="index.php" class="logo-link" style="text-decoration: none; color: #000; display: flex; align-items: center; gap: 10px;">
-                    <img src="image/logo.png" alt="Timeless Icon" style="height: 40px;">
-                    <h1 style="margin: 0; font-size: 24px;">TIMELESS</h1>
-                </a>
+<div id="smart-header">
+    <header class="top-header">
+        <div class="profile-header" id="smart-profile-header" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0px;">
+        <!-- 1. LOGO TRÊN HEADER -->
+        <a href="index.php" class="header-logo" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 8px;">
+                <img src="image/logo.png" alt="Logo" style="height: 80px;"> 
+                <span style="font-family: 'Playfair Display', serif; font-size: 24px; font-weight: bold; letter-spacing: 5px;">TIMELESS</span>
+            </a>
+       
+
+        <div class="user-box">
+            <div class="lang-switch" translate="no">
+                <i class="fa-solid fa-globe" style="color: #b58b5a;"></i>
+                <a href="<?= getLangUrl('vi') ?>" class="<?= $current_lang == 'vi' ? 'active' : '' ?>">VI</a> | 
+                <a href="<?= getLangUrl('en') ?>" class="<?= $current_lang == 'en' ? 'active' : '' ?>">EN</a> | 
+                <a href="<?= getLangUrl('ja') ?>" class="<?= $current_lang == 'ja' ? 'active' : '' ?>">JA</a>
             </div>
-            <div class="user-box">
-                <a href="profile.php" style="text-decoration: none;"> 
-                    <button class="btn-user" style="color: #b58b5a; font-weight: bold; border-color: #b58b5a; background: transparent; padding: 8px 15px; border-radius: 20px; cursor: pointer;">
-                        <?php echo isset($_SESSION['ho_ten']) ? explode(' ', trim($_SESSION['ho_ten']))[count(explode(' ', trim($_SESSION['ho_ten'])))-1] : 'User'; ?> 
-                        <i class="fa-solid fa-circle-user"></i>
+
+            <?php if(isset($_SESSION['user_id'])) {
+                $uid = $_SESSION['user_id'];
+                $get_name = $conn->query("SELECT ho_ten FROM nguoi_dung WHERE id = $uid");
+                $ten_ngan = "User";
+                if($get_name && $get_name->num_rows > 0) {
+                    $row_name = $get_name->fetch_assoc();
+                    $mang_ten = explode(' ', trim($row_name['ho_ten']));
+                    $ten_ngan = end($mang_ten); 
+                }
+            ?>
+                <a href="<?= $path ?>profile.php" style="text-decoration: none;"> 
+                    <button class="btn-user" translate="no" style="color: #b58b5a; font-weight: bold; border-color: #b58b5a;">
+                        <?= $ten_ngan; ?> <i class="fa-solid fa-circle-user"></i>
                     </button>
                 </a>
-            </div>
+            <?php } else { ?>
+                <a href="<?= $path ?>login.php" style="text-decoration: none;"> 
+                    <button class="btn-user" translate="no">User <i class="fa-solid fa-circle-user"></i></button>
+                </a>
+            <?php } ?>
+        </div>
+
         </header>
 
         <nav class="main-nav" style="border-bottom: 1px solid #eee; padding: 10px 0; background: #fff;">
@@ -297,7 +423,7 @@ $user_info = $conn->query("SELECT * FROM nguoi_dung WHERE id = $user_id")->fetch
                     
                     <div style="display: flex; align-items: center; gap: 15px; margin-top: 10px;">
                         <div style="width: 120px; height: 120px; background: #fff; border: 1px solid #ddd; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                            <img src="image/qr_code.png" alt="Mã QR" style="width: 100%; height: 100%; object-fit: contain;" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/1200px-QR_code_for_mobile_English_Wikipedia.svg.png'">
+                            <img src="https://img.vietqr.io/image/BANK_NAME-ACCOUNT_NUMBER-compact2.png?amount=100000&addInfo=Thanh%20toan%20don%20hang" alt="QR VietQR" />
                         </div>
                         
                         <div style="line-height: 1.6;">
@@ -391,5 +517,8 @@ $user_info = $conn->query("SELECT * FROM nguoi_dung WHERE id = $user_id")->fetch
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
-</body>
-</html>
+<?php
+include 'ai-chatbot.php';
+// Dòng này BẮT BUỘC nằm ở cuối cùng của file
+include $path_prefix . 'footer.php'; 
+?>

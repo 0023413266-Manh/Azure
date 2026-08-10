@@ -158,8 +158,13 @@ $result_baohanh = $conn->query($sql_baohanh);
                                 <small style="color: #666;"><i class="fa-solid fa-phone"></i> <?php echo htmlspecialchars($row['so_dien_thoai']); ?></small>
                             </td>
                             <td>
-                                <b>Đơn hàng #<?php echo !empty($row['ma_dong_ho']) ? htmlspecialchars($row['ma_dong_ho']) : 'N/A'; ?></b>
-                            </td>
+    <b>Đơn hàng #<?php echo !empty($row['ma_dong_ho']) ? htmlspecialchars($row['ma_dong_ho']) : 'N/A'; ?></b>
+    <?php if(!empty($row['so_series'])): ?>
+        <br><small style="color: #555; font-weight: 500; display: inline-block; margin-top: 3px;">
+            <i class="fa-solid fa-clock" style="font-size: 11px;"></i> <?php echo htmlspecialchars($row['so_series']); ?>
+        </small>
+    <?php endif; ?>
+</td>
                             <td style="text-align: center;">
                                 <?php if(!empty($img_src)): ?>
                                     <img src="<?php echo htmlspecialchars($img_src); ?>" class="img-thumb" onclick="openImageModal('<?php echo htmlspecialchars($img_src); ?>')" alt="Ảnh lỗi">

@@ -1,6 +1,32 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$path_prefix = ''; 
 include 'admin/connect.php';
+// ================= 1. BỘ XỬ LÝ NGÔN NGỮ (KHÔNG CẦN HEADER) =================
+if (isset($_GET['lang'])) {
+    $_SESSION['lang'] = $_GET['lang'];
+    setcookie('site_lang', $_GET['lang'], time() + 86400 * 30, '/');
+    $_COOKIE['site_lang'] = $_GET['lang'];
+}
+$current_lang = $_COOKIE['site_lang'] ?? ($_SESSION['lang'] ?? 'vi');
+
+// Hàm giữ nguyên tham số URL khi đổi ngôn ngữ
+function getLangUrl($lang) {
+    $params = $_GET;
+    $params['lang'] = $lang;
+    return '?' . http_build_query($params);
+}
+
+// Bật bộ hứng HTML dịch tự động nếu không phải Tiếng Việt
+if ($current_lang !== 'vi') {
+    ob_start();
+}
+if (file_exists('azure_translator.php')) {
+    require_once 'azure_translator.php';
+}
+
 
 // Kiểm tra đăng nhập
 if (!isset($_SESSION['user_id'])) {
@@ -212,22 +238,81 @@ if (isset($_POST['gui_danh_gia'])) {
             color: #d35400;
             font-weight: 600;
         }
+
+                /* CSS Nút chuyển ngôn ngữ hình Capsule bo tròn */
+.lang-switcher-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #f8f9fa; /* Nền xám rất nhẹ */
+    border: 1px solid #e2e8f0; /* Viền xám mảnh */
+    border-radius: 30px;        /* Bo tròn dạng viên thuốc (Pill) */
+    padding: 4px 14px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* Icon quả địa cầu màu vàng */
+.lang-switcher-pill .fa-globe {
+    color: #b58b5a; 
+    font-size: 14px;
+}
+
+/* Kiểu chữ của các ngôn ngữ */
+.lang-switcher-pill a {
+    text-decoration: none;
+    color: #4A5568; /* Màu chữ chưa chọn (xám đậm) */
+    transition: color 0.2s ease;
+}
+
+/* Ngôn ngữ đang được chọn (Màu vàng ánh kim) */
+.lang-switcher-pill a.active {
+    color: #b58b5a;
+    font-weight: bold;
+}
+
+.lang-switcher-pill a:hover {
+    color: #b58b5a;
+}
+
+/* Dấu gạch đứng ngăn cách */
+.lang-switcher-pill .lang-divider {
+    color: #cbd5e0;
+    font-weight: 300;
+}
     </style>
 </head>
 <body>
 
-    <!-- HEADER XANH -->
-    <div class="profile-header" id="smart-profile-header">
-        <div class="header-logo"><img src="image/logo.png"> TIMELESS</div>
-        <form action="search.php" method="GET" class="search-bar">
-            <input type="text" name="query" placeholder="Bạn muốn tìm gì hôm nay?" required>
-            <button type="submit" style="border: none !important; background: transparent !important; cursor: pointer; padding: 0; outline: none;">
-                <i class="fa fa-search" style="color: #666; font-size: 14px;"></i>
-            </button>
-        </form>
-        <a href="cart.php" class="header-cart">Giỏ hàng <i class="fa fa-shopping-cart"></i></a>
-    </div>
+    <div class="profile-header" id="smart-profile-header" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 30px;">
+        <!-- 1. LOGO TRÊN HEADER -->
+        <a href="index.php" class="header-logo" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 8px;">
+            <img src="image/logo.png" alt="Logo" style="height: 30px;"> TIMELESS
+        </a>
 
+        <!-- 2. KHU VỰC BÊN PHẢI: GIỎ HÀNG & NÚT CHUYỂN NGÔN NGỮ NẰM LIỀN KỀ NHAU -->
+        <div style="display: flex; align-items: center; gap: 20px;">
+            
+            <!-- Nút Giỏ Hàng -->
+            <a href="cart.php" class="icon-cart" style="text-decoration: none; color: #333; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-cart-shopping"></i> Giỏ hàng
+            </a>
+
+            <!-- Đường gạch đứng ngăn cách -->
+            <span style="color: #ddd;">|</span>
+
+            <!-- 🎯 NÚT NGÔN NGỮ NẰM KẾ BÊN GIỎ HÀNG -->
+<!-- NÚT NGÔN NGỮ ĐÚNG CHUẨN GIAO DIỆN MẪU -->
+<div class="lang-switcher-pill">
+    <i class="fa-solid fa-globe"></i>
+    <a href="<?= getLangUrl('vi') ?>" class="<?= $current_lang == 'vi' ? 'active' : '' ?>">VI</a>
+    <span class="lang-divider">|</span>
+    <a href="<?= getLangUrl('en') ?>" class="<?= $current_lang == 'en' ? 'active' : '' ?>">EN</a>
+    <span class="lang-divider">|</span>
+    <a href="<?= getLangUrl('ja') ?>" class="<?= $current_lang == 'ja' ? 'active' : '' ?>">JA</a>
+</div>
+</div>
+</div>
     <!-- CONTAINER TỔNG THỐNG NHẤT BỐ CỤC -->
     <div class="container">
         
@@ -471,5 +556,8 @@ if (isset($_POST['gui_danh_gia'])) {
 
     <?php include 'thongbao.php'; ?>
 
-</body>
-</html>
+<?php
+include 'ai-chatbot.php';
+// Dòng này BẮT BUỘC nằm ở cuối cùng của file
+include $path_prefix . 'footer.php'; 
+?>

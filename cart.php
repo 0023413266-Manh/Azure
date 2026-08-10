@@ -1,5 +1,6 @@
 <?php session_start(); 
-include 'admin/connect.php'; 
+$path_prefix = ''; 
+include $path_prefix . 'header.php';
 
 // =======================================================
 // BẪY LỖI KHI CHƯA ĐĂNG NHẬP (ÉP BUỘC ĐĂNG NHẬP)
@@ -92,16 +93,9 @@ if (isset($_GET['action']) && $_GET['action'] == 'update' && isset($_GET['id']) 
     }
     header("Location: cart.php"); exit();
 }
+
 ?>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Giỏ hàng của bạn - Timeless</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    <style>
+<style>
         .cart-checkbox { width: 18px; height: 18px; cursor: pointer; accent-color: #b58b5a; }
         .cart-table th, .cart-table td { padding: 20px 15px; vertical-align: middle; }
         .cart-table th:first-child, .cart-table td:first-child { width: 40px; text-align: center; padding: 20px 5px; }
@@ -114,81 +108,7 @@ if (isset($_GET['action']) && $_GET['action'] == 'update' && isset($_GET['id']) 
         .btn-remove:hover { color: #c9302c; }
         .cart-item-link { text-decoration: none; color: inherit; transition: 0.2s; }
         .cart-item-link:hover h4 { color: #b58b5a; }
-    </style>
-</head>
-<body>
-
-    <div id="smart-header">
-        <header class="top-header" style="justify-content: center;">
-            <div class="logo">
-                <a href="index.php" class="logo-link">
-                    <h1>TIMELESS</h1>
-                    <img src="image/logo.png" alt="Timeless Icon">
-                </a>
-            </div>
-
-            <div class="user-box" style="position: absolute; right: 50px;">
-                <?php 
-                if(isset($_SESSION['user_id'])) {
-                    $uid = $_SESSION['user_id'];
-                    $get_name = $conn->query("SELECT ho_ten FROM nguoi_dung WHERE id = $uid");
-                    $ten_ngan = "User";
-                    if($get_name && $get_name->num_rows > 0) {
-                        $row_name = $get_name->fetch_assoc();
-                        $mang_ten = explode(' ', trim($row_name['ho_ten']));
-                        $ten_ngan = end($mang_ten); 
-                    }
-                ?>
-                    <a href="profile.php" style="text-decoration: none;"> 
-                        <button class="btn-user" style="color: #b58b5a; font-weight: bold; border-color: #b58b5a;">
-                            <?php echo $ten_ngan; ?> <i class="fa-solid fa-circle-user"></i>
-                        </button>
-                    </a>
-                <?php } else { ?>
-                    <a href="login.php" style="text-decoration: none;"> 
-                        <button class="btn-user">User <i class="fa-solid fa-circle-user"></i></button>
-                    </a>
-                <?php } ?>
-            </div>
-        </header>
-
-        <nav class="main-nav">
-            <ul>
-                <li><a href="index.php">TRANG CHỦ</a></li>
-                <li class="dropdown">
-                    <a href="#">THƯƠNG HIỆU <i class="fa fa-caret-down"></i></a>
-                    <ul class="dropdown-content">
-                        <li><a href="all_rolex.php">ROLEX</a></li>
-                        <li><a href="all_omega.php">OMEGA</a></li>
-                        <li><a href="all_casio.php">CASIO</a></li>
-                        <li><a href="all_seiko.php">SEIKO</a></li>
-                        <li><a href="all_hublot.php">HUBLOT</a></li>
-                    </ul>
-                </li>
-                <li class="dropdown">
-                    <a href="#">SẢN PHẨM <i class="fa fa-caret-down"></i></a>
-                    <ul class="dropdown-content">
-                        <li><a href="Dongho_nam.php">DÀNH CHO NAM</a></li>
-                        <li><a href="Dongho_nu.php">DÀNH CHO NỮ</a></li>
-                    </ul>
-                </li>
-                <li><a href="explore.php">KHÁM PHÁ</a></li>
-                <li><a href="contact.php">LIÊN HỆ</a></li>
-                <li class="nav-icons">
-                    <div class="search-box">
-                         <form action="search.php" method="GET">
-                            <input type="text" name="query" placeholder="Bạn tìm gì..." class="search-input">
-                            <button type="submit" class="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
-                        </form>
-                    </div>
-                    <a href="cart.php" class="icon-cart" style="color: #b58b5a;">
-                        <i class="fa-solid fa-cart-shopping" style="color: #b58b5a;"></i>
-                        <span class="cart-text">Giỏ hàng</span>
-                     </a>
-                </li>
-            </ul>
-        </nav>
-    </div>
+</style>
     
     <div class="cart-page-container">
         <div class="cart-left">
@@ -420,5 +340,8 @@ if (isset($_GET['action']) && $_GET['action'] == 'update' && isset($_GET['id']) 
     </script>
     
     <?php include 'thongbao.php'; ?>
-</body>
-</html>
+<?php
+//include 'ai-chatbot.php';
+// Dòng này BẮT BUỘC nằm ở cuối cùng của file
+include $path_prefix . 'footer.php'; 
+?>

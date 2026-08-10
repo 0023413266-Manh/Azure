@@ -1,7 +1,10 @@
 <?php
-function getEmailHtml($ho_ten, $id_don_hang, $logo_base64) {
-    $ten = htmlspecialchars($ho_ten);
-    ob_start();
+// 🛑 BỌC CÂU LỆNH KIỂM TRA TỒN TẠI HÀM VÀO ĐÂY
+if (!function_exists('getEmailHtml')) {
+
+    function getEmailHtml($ho_ten, $id_don_hang, $logo_base64) {
+        $ten = htmlspecialchars($ho_ten);
+        ob_start();
 ?>
 <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;">
   <!-- HEADER -->
@@ -60,6 +63,8 @@ function getEmailHtml($ho_ten, $id_don_hang, $logo_base64) {
   </div>
 </div>
 <?php
-    return ob_get_clean();
-}
+        return ob_get_clean();
+    }
+
+} // 🛑 ĐÓNG CÂU LỆNH IF Ở ĐÂY
 ?>

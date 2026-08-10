@@ -23,7 +23,8 @@ if (isset($_GET['id'])) {
 } else {
     die("<h2 style='text-align:center; margin-top:50px;'>Không tìm thấy sản phẩm! Bạn hãy quay lại trang danh sách.</h2>");
 }
-// KIỂM TRA XEM KHÁCH HÀNG ĐÃ THÍCH SẢN PHẨM NÀY CHƯA
+
+// 4. KIỂM TRA YÊU THÍCH
 $is_favorited = false;
 if (isset($_SESSION['user_id'])) {
     $uid = $_SESSION['user_id'];
@@ -32,91 +33,19 @@ if (isset($_SESSION['user_id'])) {
         $is_favorited = true;
     }
 }
-?>
-?>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title><?php echo $row['ten_san_pham']; ?> - Timeless</title>
-    <link rel="stylesheet" href="../style.css">
-    <link rel="stylesheet" href="chi_tiet.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-</head>
-<body>
 
-    <div id="smart-header">
-        <header class="top-header">
-            <div class="logo">
-                <a href="../index.php" class="logo-link">
-                    <h1>TIMELESS</h1>
-                    <img src="../image/logo.png" alt="Timeless Icon">
-                </a>
-            </div>
-            <div class="user-box">
-                <?php 
-                if(isset($_SESSION['user_id'])) {
-                    $uid = $_SESSION['user_id'];
-                    $get_name = $conn->query("SELECT ho_ten FROM nguoi_dung WHERE id = $uid");
-                    $ten_ngan = "User";
-                    if($get_name && $get_name->num_rows > 0) {
-                        $row_name = $get_name->fetch_assoc();
-                        $mang_ten = explode(' ', trim($row_name['ho_ten']));
-                        $ten_ngan = end($mang_ten); 
-                    }
-                ?>
-                    <a href="../profile.php" style="text-decoration: none;"> 
-                        <button class="btn-user" style="color: #b58b5a; font-weight: bold; border-color: #b58b5a;">
-                            <?php echo $ten_ngan; ?> <i class="fa-solid fa-circle-user"></i>
-                        </button>
-                    </a>
-                <?php } else { ?>
-                    <a href="../login.php" style="text-decoration: none;"> 
-                        <button class="btn-user">User <i class="fa-solid fa-circle-user"></i></button>
-                    </a>
-                <?php } ?>
-            </div>
-        </header>
+// 5. KHAI BÁO BIẾN ĐƯỜNG DẪN LÙI VỀ THƯ MỤC GỐC & CSS RIÊNG
+$path_prefix = '../'; 
+$custom_css = 'chi_tiet.css';
 
-        <nav class="main-nav">
-            <ul>
-                <li><a href="../index.php">TRANG CHỦ</a></li>
-                <li class="dropdown">
-                    <a href="#">THƯƠNG HIỆU <i class="fa fa-caret-down"></i></a>
-                    <ul class="dropdown-content">
-                        <li><a href="../all_rolex.php">ROLEX</a></li>
-                        <li><a href="../all_omega.php">OMEGA</a></li>
-                        <li><a href="../all_casio.php">CASIO</a></li>
-                        <li><a href="../all_seiko.php">SEIKO</a></li>
-                        <li><a href="../all_hublot.php">HUBLOT</a></li>
-                    </ul>
-                </li>
-                <li class="dropdown">
-                    <a href="#">SẢN PHẨM <i class="fa fa-caret-down"></i></a>
-                    <ul class="dropdown-content">
-                        <li><a href="../Dongho_nam.php">ĐỒNG HỒ NAM</a></li>
-                        <li><a href="../Dongho_nu.php">ĐỒNG HỒ NỮ</a></li>
-                    </ul>
-                </li>
-                <li><a href="../explore.php">KHÁM PHÁ</a></li>
-                <li><a href="../contact.php">LIÊN HỆ</a></li>
-                <li class="nav-icons">
-                    <div class="search-box">
-                         <form action="../search.php" method="GET">
-                            <input type="text" name="query" placeholder="Bạn tìm gì..." class="search-input">
-                            <button type="submit" class="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
-                        </form>
-                    </div>
-                    <a href="../cart.php" class="icon-cart">
-                        <i class="fa-solid fa-cart-shopping"></i>
-                        <span class="cart-text">Giỏ hàng</span>
-                     </a>
-                </li>
-            </ul>
-        </nav>
-    </div>
-    
+
+// 6. NHÚNG HEADER CHUNG
+include $path_prefix . 'header.php';
+
+
+?>
+
+<!-- NỘI DUNG CHÍNH CỦA TRANG CHI TIẾT SẢN PHẨM -->
     <div style="background-color: #f9f9f9; padding: 0;">
        <div class="product-detail-container" style="padding-top: 20px; padding-bottom: 40px;">
         
@@ -232,10 +161,11 @@ if (isset($_SESSION['user_id'])) {
                 
             ];
 
-            // 2. Tìm xem tên sản phẩm hiện tại thuộc dòng nào trong danh sách trên
+            $mo_ta_ai = $sp['mo_ta'] ?? ''; 
+
             $current_content = [
                 'title' => 'CHI TIẾT SẢN PHẨM',
-                'desc'  => 'Thông tin sản phẩm đang được cập nhật.',
+                'desc'  => !empty($mo_ta_ai) ? $mo_ta_ai : 'Thông tin sản phẩm đang được cập nhật.',
                 'color' => '#333'
             ];
 
@@ -483,19 +413,31 @@ if (isset($_SESSION['user_id'])) {
                     // Lấy bộ thông số tương ứng, nếu không có ID trong mảng thì để trống
                     $my_specs = isset($all_specs[$current_id]) ? $all_specs[$current_id] : [];
                     ?>
-            <h3 style="margin-top: 30px; font-size: 18px;">Thông số kỹ thuật</h3>
-            <table class="specs-table">
-                <?php if (!empty($my_specs)): ?>
-                    <?php foreach ($my_specs as $label => $value): ?>
-                        <tr>
-                            <td><?php echo $label; ?></td>
-                            <td><?php echo $value; ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <tr><td colspan="2">Thông số đang được cập nhật...</td></tr>
-                <?php endif; ?>
-            </table>
+            <?php if (!empty($sp['mo_ta'])): ?>
+
+        <!-- NẾU CÓ DỮ LIỆU TỪ AZURE AI: IN TRỰC TIẾP HTML TỰ ĐỘNG -->
+        <div class="product-description-ai">
+            <?php echo $sp['mo_ta']; ?>
+        </div>
+
+    <?php else: ?>
+
+        <!-- NẾU SẢN PHẨM CŨ CHƯA CÓ MÔ TẢ AI: CHẠY CODE CŨ CỦA BẠN -->
+        <h3 style="margin-top: 30px; font-size: 18px;">Thông số kỹ thuật</h3>
+        <table class="specs-table">
+            <?php if (!empty($my_specs)): ?>
+                <?php foreach ($my_specs as $label => $value): ?>
+                    <tr>
+                        <td><?php echo $label; ?></td>
+                        <td><?php echo $value; ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <tr><td colspan="2">Thông số đang được cập nhật...</td></tr>
+            <?php endif; ?>
+        </table>
+
+<?php endif; ?>
         </div>
     </div>
 
@@ -1294,5 +1236,8 @@ include 'module_danh_gia.php';
     
     <?php include '../thongbao.php'; ?>
 
-</body>
-</html>
+<?php
+include '../ai-chatbot.php';
+// 3. FOOTER BẮT BUỘC PHẢI NẰM Ở DÒNG CUỐI CÙNG CỦA FILE
+include '../footer.php'; 
+?>

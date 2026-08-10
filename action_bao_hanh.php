@@ -13,10 +13,15 @@ if (!isset($_SESSION['user_id'])) {
 // -------------------------------------------------------------
 function analyzeDocumentAzure($filePath) {
     // ⚠️ SAU NÀY TẠO DỊCH VỤ TRÊN AZURE XONG BẠN ĐIỀN ENDPOINT VÀ KEY VÀO 2 DÒNG NÀY:
-    $azure_endpoint = "https://timeless-doc-ai.cognitiveservices.azure.com/"; 
-    $azure_key      = "YBLgMSgLhoU27SWH98R2NMK9kdJ7kJfKSlFxO8i1M8gVT7KkDUvmrJQQJ99CHACqBBLyXJ3w3AAALACOGbftF"; 
+// 1. Nhúng file đọc biến môi trường (Lưu ý điều chỉnh đường dẫn nếu file nằm trong thư mục con)
+require_once __DIR__ . '/env_loader.php';
 
-    $url = rtrim($azure_endpoint, '/') . "/documentintelligence/documentModels/prebuilt-invoice:analyze?api-version=2024-02-29-preview";
+// 2. Lấy Endpoint và Key từ file .env
+$azure_endpoint = $_ENV['DOC_INTEL_ENDPOINT'] ?? ''; 
+$azure_key      = $_ENV['DOC_INTEL_KEY'] ?? ''; 
+
+// 3. Đường dẫn API Document Intelligence
+$url = rtrim($azure_endpoint, '/') . "/documentintelligence/documentModels/prebuilt-invoice:analyze?api-version=2024-02-29-preview";
 
     $fileData = file_get_contents($filePath);
 

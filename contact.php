@@ -1,14 +1,16 @@
 <?php
-session_start();
-include 'admin/connect.php';
+$path_prefix = ''; 
+include $path_prefix . 'header.php';
 
 // -------------------------------------------------------------
 // HÀM KIỂM DUYỆT NỘI DUNG TỰ ĐỘNG BẰNG AZURE AI CONTENT SAFETY
 // -------------------------------------------------------------
-function checkContentSafetyAzure($text) {
-    $azure_endpoint = "https://content-safety-ktnddanggia.cognitiveservices.azure.com/"; 
-    $azure_key      = "6kA4cl4n6xPfiMen88YHq95pZRBVX2JRB7XC5uCkIzJ6nkMl5RKiJQQJ99CHACqBBLyXJ3w3AAAHACOGT7LX"; 
+require_once __DIR__ . '/env_loader.php';
 
+function checkContentSafetyAzure($text) {
+    // Lấy Endpoint và Key từ file .env
+    $azure_endpoint = $_ENV['CONTENT_SAFETY_ENDPOINT'] ?? ''; 
+    $azure_key      = $_ENV['CONTENT_SAFETY_KEY'] ?? '';
     $url = rtrim($azure_endpoint, '/') . "/contentsafety/text:analyze?api-version=2023-10-01";
 
     $data = array(
@@ -77,90 +79,8 @@ if (isset($_POST['gui_lien_he'])) {
     header("Location: contact.php");
     exit();
 }
+
 ?>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Liên hệ - Timeless</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-</head>
-<body>
-
-    <div id="smart-header">
-        <header class="top-header">
-            <div class="logo">
-                <a href="index.php" class="logo-link">
-                    <h1>TIMELESS</h1>
-                    <img src="image/logo.png" alt="Timeless Icon">
-                </a>
-            </div>
-            
-            <div class="user-box">
-                <?php 
-                if(isset($_SESSION['user_id'])) {
-                    $uid = $_SESSION['user_id'];
-                    $get_name = $conn->query("SELECT ho_ten FROM nguoi_dung WHERE id = $uid");
-                    $ten_ngan = "User"; // Dự phòng
-                    if($get_name && $get_name->num_rows > 0) {
-                        $row_name = $get_name->fetch_assoc();
-                        $mang_ten = explode(' ', trim($row_name['ho_ten']));
-                        $ten_ngan = end($mang_ten); // Lấy chữ cuối cùng
-                    }
-                ?>
-                    <a href="profile.php" style="text-decoration: none;"> 
-                        <button class="btn-user" style="color: #b58b5a; font-weight: bold; border-color: #b58b5a;">
-                            <?php echo $ten_ngan; ?> <i class="fa-solid fa-circle-user"></i>
-                        </button>
-                    </a>
-                <?php } else { ?>
-                    <a href="login.php" style="text-decoration: none;"> 
-                        <button class="btn-user">User <i class="fa-solid fa-circle-user"></i></button>
-                    </a>
-                <?php } ?>
-            </div>
-        </header>
-
-        <nav class="main-nav">
-            <ul>
-                <li><a href="index.php">TRANG CHỦ</a></li>
-                <li class="dropdown">
-                    <a href="#">THƯƠNG HIỆU <i class="fa fa-caret-down"></i></a>
-                    <ul class="dropdown-content">
-                        <li><a href="all_rolex.php">ROLEX</a></li>
-                        <li><a href="all_omega.php">OMEGA</a></li>
-                        <li><a href="all_casio.php">CASIO</a></li>
-                        <li><a href="all_seiko.php">SEIKO</a></li>
-                        <li><a href="all_hublot.php">HUBLOT</a></li>
-                    </ul>
-                </li>
-                <li class="dropdown">
-                    <a href="#">SẢN PHẨM <i class="fa fa-caret-down"></i></a>
-                    <ul class="dropdown-content">
-                        <li><a href="Dongho_nam.php">DÀNH CHO NAM</a></li>
-                        <li><a href="Dongho_nu.php">DÀNH CHO NỮ</a></li>
-                    </ul>
-                </li>
-                <li><a href="explore.php">KHÁM PHÁ</a></li>
-                <li><a href="contact.php" style="color: #b58b5a !important; font-weight: bold !important;">LIÊN HỆ</a></li>
-
-                <li class="nav-icons">
-                    <div class="search-box">
-                         <form action="search.php" method="GET">
-                            <input type="text" name="query" placeholder="Bạn tìm gì..." class="search-input">
-                            <button type="submit" class="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
-                        </form>
-                    </div>
-                    <a href="cart.php" class="icon-cart">
-                        <i class="fa-solid fa-cart-shopping"></i>
-                        <span class="cart-text">Giỏ hàng</span>
-                     </a>
-                </li>
-            </ul>
-        </nav>
-    </div>
     
     <div class="contact-page-container">
         <h2 class="contact-title">Liên hệ với chúng tôi</h2>
@@ -294,5 +214,8 @@ if (isset($_POST['gui_lien_he'])) {
 
     <?php include 'thongbao.php'; ?>
 
-</body>
-</html>
+<?php
+include 'ai-chatbot.php';
+// Dòng này BẮT BUỘC nằm ở cuối cùng của file
+include $path_prefix . 'footer.php'; 
+?>

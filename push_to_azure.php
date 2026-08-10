@@ -3,9 +3,12 @@
 require_once __DIR__ . '/admin/connect.php';
 
 // 2. Điền thông tin Azure Portal
-$searchService = "webbandongho-search";
-$apiKey        = "1fZNf5cu6rAANOVvanQlZZQNQKUOBKi8bzP8OjiUFtAzSeCZhQva"; 
-$indexName     = "products-index";
+require_once __DIR__ . '/env_loader.php';
+
+// 2. Lấy thông tin Azure AI Search từ file .env (Không còn hardcode key)
+$searchService = $_ENV['AZURE_SEARCH_SERVICE'] ?? '';
+$apiKey        = $_ENV['AZURE_SEARCH_API_KEY'] ?? ''; 
+$indexName     = $_ENV['AZURE_SEARCH_INDEX'] ?? 'products-index';
 
 // =========================================================================
 // BƯỚC BỔ SUNG: TỰ ĐỘNG KHỞI TẠO INDEX VỚI QUYỀN TÌM KIẾM (SEARCHABLE = TRUE)

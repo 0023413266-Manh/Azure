@@ -1,0 +1,15 @@
+# Giấu file bí mật chứa Key
+.env
+
+# Bỏ qua các thư mục thư viện cực nặng
+/node_modules/
+/vendor/
+
+# Bỏ qua file lưu trữ backup và ảnh upload từ user
+/admin/backups/
+/backups/
+/uploads/
+
+# File rác hệ thống
+.DS_Store
+Thumbs.db

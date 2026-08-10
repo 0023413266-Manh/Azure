@@ -1,5 +1,5 @@
 <?php
-session_start(); // ĐÃ THÊM LỆNH KHỞI ĐỘNG SESSION ĐỂ NHẬN DIỆN KHÁCH HÀNG
+session_start();
 // 1. Nhúng file kết nối Database (từ thư mục admin)
 include '../admin/connect.php';
 
@@ -24,7 +24,7 @@ if (isset($_GET['id'])) {
     die("<h2 style='text-align:center; margin-top:50px;'>Không tìm thấy sản phẩm! Bạn hãy quay lại trang danh sách.</h2>");
 }
 
-// KIỂM TRA XEM KHÁCH HÀNG ĐÃ THÍCH SẢN PHẨM NÀY CHƯA
+// 4. KIỂM TRA YÊU THÍCH
 $is_favorited = false;
 if (isset($_SESSION['user_id'])) {
     $uid = $_SESSION['user_id'];
@@ -33,151 +33,14 @@ if (isset($_SESSION['user_id'])) {
         $is_favorited = true;
     }
 }
+
+// 5. KHAI BÁO BIẾN ĐƯỜNG DẪN LÙI VỀ THƯ MỤC GỐC & CSS RIÊNG
+$path_prefix = '../'; 
+$custom_css = 'chi_tiet.css';
+
+// 6. NHÚNG HEADER CHUNG
+include $path_prefix . 'header.php';
 ?>
-
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title><?php echo $row['ten_san_pham']; ?> - Timeless</title>
-    <link rel="stylesheet" href="../style.css">
-    <link rel="stylesheet" href="chi_tiet.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    <style>
-        .product-story-section .story-img img {
-            box-shadow: none !important;
-            border-radius: 15px !important;
-            border: none !important;
-            outline: none !important;
-        }
-    
-        /* CSS cho hệ thống đánh giá */
-        .review-section { max-width: 1200px; margin: 40px auto; padding: 30px; background: #fff; border-radius: 8px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); }
-        .review-title { font-size: 20px; border-bottom: 2px solid #b58b5a; padding-bottom: 10px; margin-bottom: 20px; color: #333; font-family: "Playfair Display", serif; }
-        .review-summary { display: flex; gap: 30px; margin-bottom: 30px; flex-wrap: wrap; }
-        .review-rating-overview { text-align: center; padding: 20px; background: #faf7f2; border-radius: 8px; min-width: 200px; }
-        .review-big-rating { display: flex; align-items: baseline; justify-content: center; gap: 5px; margin-bottom: 10px; }
-        .review-score { font-size: 48px; font-weight: bold; color: #b58b5a; }
-        .review-out-of { font-size: 18px; color: #888; }
-        .review-stars { display: flex; justify-content: center; gap: 5px; margin-bottom: 10px; }
-        .review-total { font-size: 14px; color: #666; }
-        .review-form { flex: 1; min-width: 300px; }
-        .review-stars-input { margin-bottom: 15px; }
-        .review-stars-input label { display: block; margin-bottom: 10px; font-weight: bold; color: #333; }
-        .star-rating { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 5px; }
-        .star-rating input { display: none; }
-        .star-rating label { font-size: 30px; color: #ddd; cursor: pointer; transition: color 0.2s; }
-        .star-rating label:hover,
-        .star-rating label:hover ~ label,
-        .star-rating input:checked ~ label { color: #f39c12; }
-        .review-form textarea { width: 100%; height: 100px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; resize: none; font-family: inherit; outline: none; margin-bottom: 15px; }
-        .review-form textarea:focus { border-color: #b58b5a; }
-        .review-file-upload { margin-bottom: 15px; }
-        .review-file-upload label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
-        .review-file-upload input[type="file"] { padding: 10px; border: 1px dashed #ccc; border-radius: 5px; width: 100%; }
-        .image-preview { margin-top: 10px; }
-        .image-preview img { max-width: 200px; max-height: 200px; border-radius: 5px; border: 1px solid #eee; }
-        .btn-submit-review { background: #b58b5a; color: #fff; border: none; padding: 12px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn-submit-review:hover { background: #967045; }
-        .review-notice { padding: 15px; border-radius: 5px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-        .review-notice i { font-size: 20px; }
-        .review-notice.notice-info { background: #f0f7ff; color: #0056b3; border: 1px solid #cce5ff; }
-        .review-notice.notice-warning { background: #fff5f5; color: #c92a2a; border: 1px solid #ffc9c9; }
-        .review-notice.notice-success { background: #f4fbf7; color: #2b8a3e; border: 1px solid #b2f2bb; }
-        .review-notice a { color: inherit; font-weight: bold; text-decoration: underline; }
-        .review-success-msg { background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #c3e6cb; }
-        .review-error-msg { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #f5c6cb; }
-        .review-list { display: flex; flex-direction: column; gap: 20px; }
-        .review-item { display: flex; gap: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
-        .review-item-header { flex: 1; }
-        .review-user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .review-user-avatar { width: 40px; height: 40px; background: #f0f0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #b58b5a; font-size: 18px; }
-        .review-user-details { display: flex; flex-direction: column; }
-        .review-author { font-weight: bold; color: #333; }
-        .review-date { font-size: 12px; color: #888; }
-        .review-item-stars { display: flex; gap: 3px; margin-bottom: 10px; }
-        .review-item-content { flex: 1; }
-        .review-item-content p { color: #555; line-height: 1.6; margin-bottom: 10px; }
-        .review-item-image img { max-width: 200px; max-height: 200px; border-radius: 5px; border: 1px solid #eee; cursor: pointer; transition: transform 0.2s; }
-        .review-item-image img:hover { transform: scale(1.05); }
-        .review-no-data { text-align: center; padding: 40px; color: #888; }
-        .review-no-data i { font-size: 40px; color: #ddd; margin-bottom: 15px; display: block; }
-    </style>
-</head>
-<body>
-
-    <div id="smart-header">
-        <header class="top-header">
-            <div class="logo">
-                <a href="../index.php" class="logo-link">
-                    <h1>TIMELESS</h1>
-                    <img src="../image/logo.png" alt="Timeless Icon">
-                </a>
-            </div>
-            
-            <div class="user-box">
-                <?php 
-                if(isset($_SESSION['user_id'])) {
-                    $uid = $_SESSION['user_id'];
-                    $get_name = $conn->query("SELECT ho_ten FROM nguoi_dung WHERE id = $uid");
-                    $ten_ngan = "User";
-                    if($get_name && $get_name->num_rows > 0) {
-                        $row_name = $get_name->fetch_assoc();
-                        $mang_ten = explode(' ', trim($row_name['ho_ten']));
-                        $ten_ngan = end($mang_ten); 
-                    }
-                ?>
-                    <a href="../profile.php" style="text-decoration: none;"> 
-                        <button class="btn-user" style="color: #b58b5a; font-weight: bold; border-color: #b58b5a;">
-                            <?php echo $ten_ngan; ?> <i class="fa-solid fa-circle-user"></i>
-                        </button>
-                    </a>
-                <?php } else { ?>
-                    <a href="../login.php" style="text-decoration: none;"> 
-                        <button class="btn-user">User <i class="fa-solid fa-circle-user"></i></button>
-                    </a>
-                <?php } ?>
-            </div>
-        </header>
-
-    <nav class="main-nav">
-            <ul>
-                <li><a href="../index.php">TRANG CHỦ</a></li>
-                <li class="dropdown">
-                    <a href="#">THƯƠNG HIỆU <i class="fa fa-caret-down"></i></a>
-                    <ul class="dropdown-content">
-                        <li><a href="../all_rolex.php">ROLEX</a></li>
-                        <li><a href="../all_omega.php">OMEGA</a></li>
-                        <li><a href="../all_casio.php">CASIO</a></li>
-                        <li><a href="../all_seiko.php">SEIKO</a></li>
-                        <li><a href="../all_hublot.php">HUBLOT</a></li>
-                    </ul>
-                </li>
-                <li class="dropdown">
-                    <a href="#">SẢN PHẨM <i class="fa fa-caret-down"></i></a>
-                    <ul class="dropdown-content">
-                        <li><a href="../Dongho_nam.php">ĐỒNG HỒ NAM</a></li>
-                        <li><a href="../Dongho_nu.php">ĐỒNG HỒ NỮ</a></li>
-                    </ul>
-                </li>
-                <li><a href="../explore.php">KHÁM PHÁ</a></li>
-                <li><a href="../contact.php">LIÊN HỆ</a></li>
-                <li class="nav-icons">
-                    <div class="search-box">
-                         <form action="../search.php" method="GET">
-                            <input type="text" name="query" placeholder="Bạn tìm gì..." class="search-input">
-                            <button type="submit" class="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
-                        </form>
-                    </div>
-                    <a href="../cart.php" class="icon-cart">
-                        <i class="fa-solid fa-cart-shopping"></i>
-                        <span class="cart-text">Giỏ hàng</span>
-                     </a>
-                </li>
-            </ul>
-        </nav>
-    </div>
     
     <div style="background-color: #f9f9f9; padding: 0;">
        <div class="product-detail-container" style="padding-top: 20px; padding-bottom: 40px;">
@@ -1986,5 +1849,8 @@ include 'module_danh_gia.php';
             document.body.appendChild(modal);
         }
     </script>
-</body>
-</html>
+<?php
+include '../ai-chatbot.php';
+// Dòng này BẮT BUỘC nằm ở cuối cùng của file
+include $path_prefix . 'footer.php'; 
+?>
