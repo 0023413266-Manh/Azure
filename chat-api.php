@@ -1,5 +1,4 @@
 <?php
-// 1. TẮT HIỂN THỊ LỖI DẠNG HTML ĐỂ KHÔNG BỊ VĂNG LỖI "Unexpected token '<'" TRÊN JS
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
@@ -7,34 +6,33 @@ header('Content-Type: application/json; charset=utf-8');
 
 try {
     if (!extension_loaded('curl') || !function_exists('curl_init')) {
-        throw new Exception("PHP trên XAMPP chưa bật cURL extension!");
+        throw new Exception("PHP server chưa bật cURL extension!");
     }
 
-    // 2. TỰ ĐỘNG NẠP FILE ENV_LOADER.PHP (TÌM CẢ Ở FOLDER HIỆN TẠI VÀ FOLDER CHA)
+    // 1. TỰ ĐỘNG NẠP FILE ENV_LOADER.PHP
     $envPath = __DIR__ . '/env_loader.php';
     if (!file_exists($envPath)) {
-        $envPath = __DIR__ . '/../env_loader.php'; // Phòng trường hợp file API nằm trong folder con (ajax/api)
+        $envPath = __DIR__ . '/../env_loader.php';
     }
 
     if (file_exists($envPath)) {
         require_once $envPath;
-    } else {
-        throw new Exception("Không tìm thấy file env_loader.php ở cả thư mục hiện tại lẫn thư mục cha!");
     }
 
-    // 3. KẾT NỐI DATABASE MYSQL (LẤY TỪ .ENV)
-    $db_host = $_ENV['DB_HOST'] ?? 'localhost';
-    $db_user = $_ENV['DB_USER'] ?? 'root';
-    $db_pass = $_ENV['DB_PASS'] ?? '';
-    $db_name = $_ENV['DB_NAME'] ?? 'timeless';
+    // 2. KẾT NỐI DATABASE MYSQL (TỰ ĐỘNG TƯƠNG THÍCH XAMPP VÀ AZURE)
+    $db_host = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: '127.0.0.1';
+    $db_user = $_ENV['DB_USER'] ?? getenv('DB_USER') ?: 'root';
+    $db_pass = $_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: '';
+    $db_name = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: 'timeless';
 
-    $conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
+    mysqli_report(MYSQLI_REPORT_OFF);
+    $conn = @new mysqli($db_host, $db_user, $db_pass, $db_name);
     if ($conn->connect_error) {
-        throw new Exception("Không thể kết nối Database MySQL: " . $conn->connect_error);
+        throw new Exception("Lỗi kết nối MySQL: " . $conn->connect_error);
     }
     $conn->set_charset("utf8mb4");
 
-    // 4. TRUY VẤN LẤY DỮ LIỆU SẢN PHẨM TỰ ĐỘNG
+    // 3. TRUY VẤN DỮ LIỆU SẢN PHẨM
     $sql = "SELECT id, ten_san_pham, gia_ban, anh_san_pham FROM san_pham WHERE ton_kho > 0 ORDER BY id DESC LIMIT 20";
     $result = $conn->query($sql);
 
@@ -52,7 +50,7 @@ try {
     }
     $conn->close();
 
-    // 5. NHẬN LỊCH SỬ TIN NHẮN TỪ FRONTEND
+    // 4. NHẬN LỊCH SỬ TIN NHẮN TỪ FRONTEND
     $rawInput = file_get_contents('php://input');
     $input = json_decode($rawInput, true);
     $history = isset($input['history']) && is_array($input['history']) ? $input['history'] : [];
@@ -62,21 +60,19 @@ try {
         exit;
     }
 
-    // 6. LẤY API KEY & ENDPOINT TỪ BIẾN MÔI TRƯỜNG (.ENV)
+    // 5. LẤY API KEY & ENDPOINT
     $apiKey   = $_ENV['AZURE_OPENAI_KEY'] ?? getenv('AZURE_OPENAI_KEY') ?? '';
     $endpoint = $_ENV['AZURE_OPENAI_ENDPOINT'] ?? getenv('AZURE_OPENAI_ENDPOINT') ?? '';
 
-    // Xóa dấu ngoặc kép hoặc khoảng trắng dư thừa nếu có trong file .env
     $apiKey   = trim($apiKey, " \t\n\r\0\x0B\"'");
     $endpoint = trim($endpoint, " \t\n\r\0\x0B\"'");
 
-    // Cấu trúc Json báo lỗi đã được CHUẨN HÓA lại cho Javascript
     if (empty($apiKey) || empty($endpoint)) {
-        echo json_encode(['status' => 'error', 'reply' => 'Chưa cấu hình AZURE_OPENAI_KEY hoặc AZURE_OPENAI_ENDPOINT trong file .env!']);
+        echo json_encode(['status' => 'error', 'reply' => 'Chưa cấu hình AZURE_OPENAI_KEY hoặc AZURE_OPENAI_ENDPOINT!']);
         exit;
     }
 
-    // 7. TẠO SYSTEM PROMPT VÀ MẢNG MESSAGES
+    // 6. TẠO SYSTEM PROMPT
     $systemPrompt = "Bạn là AI Fashion Advisor - Trợ lý tư vấn gu thời trang và đồng hồ chuyên nghiệp cho cửa hàng Timeless.
 Nhiệm vụ của bạn:
 1. Lắng nghe phong cách trang phục, sự kiện hoặc ngân sách/kích thước cổ tay của khách hàng.
@@ -103,14 +99,14 @@ QUY TẮC BẮT BUỘC KHI GỢI Ý SẢN PHẨM:
         }
     }
 
-    // Sử dụng 'max_tokens' thay vì 'max_completion_tokens' để tương thích 100% các model Azure OpenAI
+    // FIX CHÍNH TẠI ĐÂY: Dùng 'max_completion_tokens' theo đúng yêu cầu từ Azure OpenAI
     $payload = [
         'messages' => $messagesPayload,
         'temperature' => 1,
         'max_completion_tokens' => 1000
     ];
 
-    // 8. GỬI REQUEST SANG AZURE OPENAI
+    // 7. GỬI REQUEST SANG AZURE OPENAI
     $maxRetries = 3;
     $response = false;
     $curlError = '';
@@ -128,7 +124,7 @@ QUY TẮC BẮT BUỘC KHI GỢI Ý SẢN PHẨM:
                 'Content-Type: application/json',
                 'api-key: ' . $apiKey
             ],
-            CURLOPT_SSL_VERIFYPEER => false, // Bắt buộc cho Localhost XAMPP
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_SSL_VERIFYHOST => false,
             CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
             CURLOPT_TIMEOUT        => 30,
@@ -147,7 +143,7 @@ QUY TẮC BẮT BUỘC KHI GỢI Ý SẢN PHẨM:
     }
 
     if ($curlError) {
-        throw new Exception("Lỗi cURL: " . $curlError);
+        throw new Exception("Lỗi cURL kết nối Azure: " . $curlError);
     }
 
     if ($httpCode === 200 && $response) {
@@ -159,7 +155,7 @@ QUY TẮC BẮT BUỘC KHI GỢI Ý SẢN PHẨM:
         $errMsg = $errObj['error']['message'] ?? $response;
         
         if ($httpCode === 0 || empty($errMsg)) {
-            $errMsg = "Không thể kết nối tới Azure. Vui lòng kiểm tra AZURE_OPENAI_ENDPOINT trong file .env!";
+            $errMsg = "Không thể kết nối tới Azure OpenAI. Vui lòng kiểm tra AZURE_OPENAI_ENDPOINT!";
         }
         
         echo json_encode(['status' => 'error', 'reply' => "Lỗi Azure (Mã $httpCode): " . $errMsg]);
