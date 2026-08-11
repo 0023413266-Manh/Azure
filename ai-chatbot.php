@@ -1,21 +1,22 @@
 </script>
 
-<!-- Nút mở khung chat -->
-<!-- Nút mở khung chat -->
-<!-- Nút mở khung chat -->
-<button id="ai-chat-btn" onclick="toggleChatWindow()" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; background: #0078d4; color: white; border: none; border-radius: 50px; padding: 12px 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-    💬 AI Tư Vấn Thời Trang
-</button>
+<!-- Nút mở khung chat và Khung Chatbot -->
+<div class="notranslate" translate="no">
 
-<!-- Khung Chatbot -->
-<div id="ai-chat-box" style="display: none; position: fixed; bottom: 80px; right: 20px; z-index: 9999; width: 360px; height: 500px; background: white; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); flex-direction: column; overflow: hidden; font-family: Arial, sans-serif;">
-    <div style="background: #0078d4; color: white; padding: 12px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
-        <span>🤖 AI Fashion Advisor</span>
-        <div>
-            <span onclick="clearChatHistory()" title="Xoá lịch sử chat" style="cursor: pointer; font-size: 16px; margin-right: 12px;">🗑️</span>
-            <span onclick="toggleChatWindow()" style="cursor: pointer; font-size: 18px;">✖</span>
+    <!-- Nút mở khung chat -->
+    <button id="ai-chat-btn" onclick="toggleChatWindow()" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; background: #0078d4; color: white; border: none; border-radius: 50px; padding: 12px 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+        💬 AI Tư Vấn Thời Trang
+    </button>
+
+    <!-- Khung Chatbot -->
+    <div id="ai-chat-box" style="display: none; position: fixed; bottom: 80px; right: 20px; z-index: 9999; width: 360px; height: 500px; background: white; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); flex-direction: column; overflow: hidden; font-family: Arial, sans-serif;">
+        <div style="background: #0078d4; color: white; padding: 12px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+            <span>🤖 AI Fashion Advisor</span>
+            <div>
+                <span onclick="clearChatHistory()" title="Xoá lịch sử chat" style="cursor: pointer; font-size: 16px; margin-right: 12px;">🗑️</span>
+                <span onclick="toggleChatWindow()" style="cursor: pointer; font-size: 18px;">✖</span>
+            </div>
         </div>
-    </div>
 
     <div id="chat-messages" style="flex: 1; padding: 15px; overflow-y: auto; background: #f9f9f9; font-size: 14px; line-height: 1.5;">
         <!-- Lịch sử tin nhắn sẽ được load tự động tại đây -->
