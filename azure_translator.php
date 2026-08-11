@@ -31,7 +31,64 @@ function azureTranslate($text, $toLang = 'en') {
         return $text;
     }
 
-    $endpoint = "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=" . urlencode($toLang);
+    return sendAzureTranslateRequest($text, $toLang, 'plain');
+}
+
+
+/**
+ * 3. HÀM DỊCH NGUYÊN TRANG HTML (TỰ ĐỘNG CẮT CHUNK THÔNG MINH - KHÔNG MẤT FOOTER)
+ */
+function azureTranslateHTML($htmlContent, $toLang = 'en') {
+    if (empty(trim($htmlContent)) || $toLang === 'vi' || empty(AZURE_TRANSLATOR_KEY)) {
+        return $htmlContent;
+    }
+
+    if (session_status() === PHP_SESSION_NONE) {
+        @session_start();
+    }
+
+    // Kiểm tra bộ nhớ tạm Cache (Nếu đã dịch trang này thì trả về luôn - 0.01s)
+    $cacheKey = 'trans_page_' . $toLang . '_' . md5($htmlContent);
+    if (isset($_SESSION[$cacheKey]) && !empty($_SESSION[$cacheKey])) {
+        return $_SESSION[$cacheKey];
+    }
+
+    $length = mb_strlen($htmlContent, 'UTF-8');
+
+    // NẾU TRANG Quá 40.000 KÝ TỰ: Chia đôi trang tại thẻ </div> giữa trang để tránh lỗi 50,000 chars của Azure
+    if ($length > 40000) {
+        $half = (int)($length / 2);
+        $splitPos = mb_strpos($htmlContent, '</div>', $half, 'UTF-8');
+
+        if ($splitPos !== false) {
+            $splitPos += 6; // Bao gồm thẻ </div>
+            $part1 = mb_substr($htmlContent, 0, $splitPos, 'UTF-8');
+            $part2 = mb_substr($htmlContent, $splitPos, null, 'UTF-8');
+
+            $translatedPart1 = sendAzureTranslateRequest($part1, $toLang, 'html');
+            $translatedPart2 = sendAzureTranslateRequest($part2, $toLang, 'html');
+
+            $finalHTML = $translatedPart1 . $translatedPart2;
+        } else {
+            $finalHTML = sendAzureTranslateRequest($htmlContent, $toLang, 'html');
+        }
+    } else {
+        $finalHTML = sendAzureTranslateRequest($htmlContent, $toLang, 'html');
+    }
+
+    // Lưu kết quả vào Cache Session
+    $_SESSION[$cacheKey] = $finalHTML;
+
+    return $finalHTML;
+}
+
+
+/**
+ * 4. HÀM HELPER GỬI API SANG AZURE TRANSLATOR
+ */
+function sendAzureTranslateRequest($text, $toLang, $type = 'html') {
+    $textTypeParam = ($type === 'html') ? '&textType=html' : '';
+    $endpoint = "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=" . urlencode($toLang) . $textTypeParam;
 
     $requestBody = json_encode([
         ['Text' => $text]
@@ -65,73 +122,5 @@ function azureTranslate($text, $toLang = 'en') {
     }
 
     return $text;
-}
-
-
-/**
- * HÀM DỊCH NGUYÊN TRANG HTML (CÓ BỘ NHỚ TẠM CACHE ĐỂ KHÔNG BỊ LẮC)
- */
-function azureTranslateHTML($htmlContent, $toLang = 'en') {
-    if (empty(trim($htmlContent)) || $toLang === 'vi' || empty(AZURE_TRANSLATOR_KEY)) {
-        return $htmlContent;
-    }
-
-    // 1. BẬT SESSION NẾU CHƯA CÓ
-    if (session_status() === PHP_SESSION_NONE) {
-        @session_start();
-    }
-
-    // 2. KÍCH THƯỚC BỘ NHỚ CACHE (Tạo mã Hash cho trang)
-    $cacheKey = 'trans_page_' . $toLang . '_' . md5($htmlContent);
-
-    // Nếu đã dịch trang này rồi -> Trả về kết quả ngay lập tức (0.01s - Siêu mượt)
-    if (isset($_SESSION[$cacheKey]) && !empty($_SESSION[$cacheKey])) {
-        return $_SESSION[$cacheKey];
-    }
-
-    // Giới hạn độ dài văn bản gửi tới Azure
-    if (mb_strlen($htmlContent, 'UTF-8') > 45000) {
-        $htmlContent = mb_substr($htmlContent, 0, 45000, 'UTF-8');
-    }
-
-    $endpoint = "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=" . urlencode($toLang) . "&textType=html";
-
-    $requestBody = json_encode([
-        ['Text' => $htmlContent]
-    ], JSON_UNESCAPED_UNICODE);
-
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL            => $endpoint,
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => $requestBody,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 10,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_SSL_VERIFYHOST => false,
-        CURLOPT_HTTPHEADER     => [
-            'Ocp-Apim-Subscription-Key: ' . AZURE_TRANSLATOR_KEY,
-            'Ocp-Apim-Subscription-Region: ' . AZURE_TRANSLATOR_REGION,
-            'Content-Type: application/json; charset=UTF-8'
-        ]
-    ]);
-
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
-    if ($httpCode === 200 && $response) {
-        $result = json_decode($response, true);
-        if (isset($result[0]['translations'][0]['text'])) {
-            $translatedHTML = $result[0]['translations'][0]['text'];
-            
-            // LƯU VÀO CACHE CHO CÁC LẦN TẢI TRANG SAU
-            $_SESSION[$cacheKey] = $translatedHTML;
-            
-            return $translatedHTML;
-        }
-    }
-
-    return $htmlContent;
 }
 ?>
