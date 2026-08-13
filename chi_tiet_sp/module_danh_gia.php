@@ -301,7 +301,7 @@
             ?>
             <?php if (!empty($dg["anh_danh_gia"])): ?>
                 <div style="margin-top: 10px;">
-                    <img src="<?php echo $path_anh; ?>" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; cursor: pointer;" onclick="window.open(this.src)">
+                    <img src="<?php echo $path_anh; ?>" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; cursor: pointer;" onclick="window.open(this.src)" onerror="this.onerror=null; this.src='../image/no-image.png';">
                 </div>
             <?php endif; ?>
         </div>

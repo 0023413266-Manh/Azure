@@ -19,7 +19,7 @@ try {
         require_once $envPath;
     }
 
-    // 2. KẾT NỐI DATABASE MYSQL (TỰ ĐỘNG TƯƠNG THÍCH XAMPP VÀ AZURE)
+    // 2. KẾT NỐI DATABASE MYSQL
     $db_host = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: '127.0.0.1';
     $db_user = $_ENV['DB_USER'] ?? getenv('DB_USER') ?: 'root';
     $db_pass = $_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: '';
@@ -32,25 +32,7 @@ try {
     }
     $conn->set_charset("utf8mb4");
 
-    // 3. TRUY VẤN DỮ LIỆU SẢN PHẨM
-    $sql = "SELECT id, ten_san_pham, gia_ban, anh_san_pham FROM san_pham WHERE ton_kho > 0 ORDER BY id DESC LIMIT 20";
-    $result = $conn->query($sql);
-
-    $danhSachSanPham = "";
-    if ($result && $result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
-            $giaFmt = number_format($row['gia_ban'], 0, ',', '.') . " VNĐ";
-            $danhSachSanPham .= "SẢN PHẨM: " . $row['ten_san_pham'] . "\n";
-            $danhSachSanPham .= "- Giá: " . $giaFmt . "\n";
-            $danhSachSanPham .= "- Cú pháp Ảnh: [ANH: " . $row['anh_san_pham'] . "]\n";
-            $danhSachSanPham .= "- Cú pháp Nút xem: [NUT: 👉 Xem chi tiết sản phẩm | chi_tiet_sp/chi_tiet_rolex.php?id=" . $row['id'] . "]\n\n";
-        }
-    } else {
-        $danhSachSanPham = "Hiện tại cửa hàng đang cập nhật thêm mẫu mới.";
-    }
-    $conn->close();
-
-    // 4. NHẬN LỊCH SỬ TIN NHẮN TỪ FRONTEND
+    // 3. NHẬN LỊCH SỬ TIN NHẮN TỪ FRONTEND
     $rawInput = file_get_contents('php://input');
     $input = json_decode($rawInput, true);
     $history = isset($input['history']) && is_array($input['history']) ? $input['history'] : [];
@@ -59,6 +41,71 @@ try {
         echo json_encode(['status' => 'error', 'reply' => 'Chưa nhận được câu hỏi từ bạn.']);
         exit;
     }
+
+    // Lấy câu hỏi mới nhất của người dùng
+    $lastUserMsg = '';
+    for ($i = count($history) - 1; $i >= 0; $i--) {
+        if (isset($history[$i]['role']) && $history[$i]['role'] === 'user') {
+            $lastUserMsg = mb_strtolower($history[$i]['content'], 'UTF-8');
+            break;
+        }
+    }
+
+    // 4. TRUY VẤN DỮ LIỆU SẢN PHẨM THÔNG MINH
+    $searchCondition = "";
+    if (!empty($lastUserMsg)) {
+        $brands = ['rolex', 'hublot', 'omega', 'casio', 'seiko', 'tissot', 'orient', 'citizen', 'cartier', 'patek'];
+        $foundBrands = [];
+        foreach ($brands as $b) {
+            if (strpos($lastUserMsg, $b) !== false) {
+                $foundBrands[] = "LOWER(ten_san_pham) LIKE '%" . $conn->real_escape_string($b) . "%'";
+            }
+        }
+        if (!empty($foundBrands)) {
+            $searchCondition = " AND (" . implode(" OR ", $foundBrands) . ")";
+        }
+    }
+
+    if (!empty($searchCondition)) {
+        $sql = "SELECT id, ten_san_pham, gia_ban, anh_san_pham FROM san_pham WHERE ton_kho > 0 $searchCondition ORDER BY id DESC LIMIT 30";
+    } else {
+        $sql = "SELECT id, ten_san_pham, gia_ban, anh_san_pham FROM san_pham WHERE ton_kho > 0 ORDER BY id DESC LIMIT 60";
+    }
+
+    $result = $conn->query($sql);
+
+    $danhSachSanPham = "";
+    if ($result && $result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $giaFmt = number_format($row['gia_ban'], 0, ',', '.') . " VNĐ";
+            $tenSpLower = mb_strtolower($row['ten_san_pham'], 'UTF-8');
+
+            // 🎯 TỰ ĐỘNG CHỌN ĐÚNG FILE PHP CHI TIẾT THEO HÃNG
+            $fileDetail = 'chi_tiet_rolex.php'; // File mặc định
+            if (strpos($tenSpLower, 'hublot') !== false) {
+                $fileDetail = 'chi_tiet_hublot.php';
+            } elseif (strpos($tenSpLower, 'omega') !== false) {
+                $fileDetail = 'chi_tiet_omega.php';
+            } elseif (strpos($tenSpLower, 'casio') !== false) {
+                $fileDetail = 'chi_tiet_casio.php';
+            } elseif (strpos($tenSpLower, 'seiko') !== false) {
+                $fileDetail = 'chi_tiet_seiko.php';
+            } elseif (strpos($tenSpLower, 'rolex') !== false) {
+                $fileDetail = 'chi_tiet_rolex.php';
+            }
+
+            // Dấu / ở đầu (/chi_tiet_sp/...) để chống lỗi 404 lặp thư mục
+            $linkChiTiet = "chi_tiet_sp/" . $fileDetail . "?id=" . $row['id'];
+
+            $danhSachSanPham .= "SẢN PHẨM: " . $row['ten_san_pham'] . "\n";
+            $danhSachSanPham .= "- Giá: " . $giaFmt . "\n";
+            $danhSachSanPham .= "- Cú pháp Ảnh: [ANH: " . $row['anh_san_pham'] . "]\n";
+            $danhSachSanPham .= "- Cú pháp Nút xem: [NUT: 👉 Xem chi tiết sản phẩm | " . $linkChiTiet . "]\n\n";
+        }
+    } else {
+        $danhSachSanPham = "Không tìm thấy sản phẩm nào phù hợp trực tiếp trong hệ thống.";
+    }
+    $conn->close();
 
     // 5. LẤY API KEY & ENDPOINT
     $apiKey   = $_ENV['AZURE_OPENAI_KEY'] ?? getenv('AZURE_OPENAI_KEY') ?? '';
@@ -83,7 +130,9 @@ DANH SÁCH SẢN PHẨM HIỆN CÓ TRONG DATABASE CỬA HÀNG:
 " . $danhSachSanPham . "
 
 QUY TẮC BẮT BUỘC KHI GỢI Ý SẢN PHẨM:
+- Chỉ tư vấn và giới thiệu các sản phẩm CÓ TRONG DANH SÁCH TRÊN.
 - Khi gợi ý mẫu đồng hồ nào, BẮT BUỘC chèn đúng nguyên văn 'Cú pháp Ảnh' và 'Cú pháp Nút xem' tương ứng của mẫu đó.
+- Tuyệt đối không sửa đổi hay giải thích đường dẫn URL trong 'Cú pháp Nút xem'.
 - Không tự ý bịa thêm đường dẫn ảnh hoặc link sản phẩm không có trong danh sách trên.";
 
     $messagesPayload = [
@@ -99,7 +148,6 @@ QUY TẮC BẮT BUỘC KHI GỢI Ý SẢN PHẨM:
         }
     }
 
-    // FIX CHÍNH TẠI ĐÂY: Dùng 'max_completion_tokens' theo đúng yêu cầu từ Azure OpenAI
     $payload = [
         'messages' => $messagesPayload,
         'temperature' => 1,

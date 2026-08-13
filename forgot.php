@@ -1,34 +1,65 @@
 <?php
 session_start();
+require_once 'env_loader.php';
+require_once 'send_mail_gcp.php'; // Nạp file gửi mail Google Cloud API
 include 'admin/connect.php';
 
 $step = 1;
 $error = '';
 
 // =====================================
-// BƯỚC 1: KIỂM TRA EMAIL / SĐT
+// BƯỚC 1: KIỂM TRA CAPTCHA & EMAIL / SĐT -> GỬI MAIL CLOUD
 // =====================================
 if (isset($_POST['btn_step1'])) {
-    $email_phone = $conn->real_escape_string(trim($_POST['email_phone']));
     
-    // Tìm trong database xem có ai dùng SĐT hoặc Email này không
-    $sql = "SELECT id FROM nguoi_dung WHERE email = '$email_phone' OR so_dien_thoai = '$email_phone' LIMIT 1";
-    $result = $conn->query($sql);
-    
-    if ($result && $result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        $_SESSION['reset_user_id'] = $row['id'];
-        
-        // BẪY LỖI: Đặt lại cờ xác thực OTP (Reset an toàn)
-        $_SESSION['otp_verified'] = false; 
-        
-        // Tạo mã OTP ngẫu nhiên 4 số
-        $_SESSION['reset_otp'] = rand(1000, 9999); 
-        
-        // Chuyển sang bước 2
-        $step = 2;
+    // 1. XÁC THỰC GOOGLE RECAPTCHA V2
+    $recaptcha_response = $_POST['g-recaptcha-response'] ?? '';
+    $recaptcha_secret   = $_ENV['RECAPTCHA_SECRET_KEY'] ?? '6LdCn4ItAAAAAAHhm3OWqKM8lHS_J3Ndzz3y0gwgC';
+
+    if (empty($recaptcha_response)) {
+        $error = "Vui lòng tích chọn ô 'Tôi không phải là người máy'!";
+        $step = 1;
     } else {
-        $error = "Không tìm thấy tài khoản nào khớp với Email/SĐT này!";
+        // Gửi Yêu cầu xác thực tới Google Server
+        $verify_url = "https://www.google.com/recaptcha/api/siteverify?secret={$recaptcha_secret}&response={$recaptcha_response}";
+        $response_json = @file_get_contents($verify_url);
+        $response_data = json_decode($response_json, true);
+
+        if (!$response_data['success']) {
+            $error = "Xác nhận Captcha thất bại! Vui lòng thử lại.";
+            $step = 1;
+        } else {
+            // 2. CAPTCHA HỢP LỆ -> XỬ LÝ TÌM TÀI KHOẢN VÀ GỬI MAIL OTP
+            $email_phone = $conn->real_escape_string(trim($_POST['email_phone']));
+            
+            $sql = "SELECT id, email FROM nguoi_dung WHERE email = '$email_phone' OR so_dien_thoai = '$email_phone' LIMIT 1";
+            $result = $conn->query($sql);
+            
+            if ($result && $result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                $target_email = $row['email'];
+
+                $_SESSION['reset_user_id'] = $row['id'];
+                $_SESSION['reset_email']   = $target_email; 
+                $_SESSION['otp_verified']  = false; 
+                
+                // Tạo mã OTP ngẫu nhiên 4 số
+                $otp = rand(1000, 9999); 
+                $_SESSION['reset_otp'] = $otp; 
+                
+                // GỌI DỊCH VỤ GOOGLE CLOUD ĐỂ GỬI EMAIL OTP
+                if (sendOtpViaGoogleCloud($target_email, $otp)) {
+                    $step = 2; // Qua bước 2 nhập OTP
+                } else {
+                    $error = "Lỗi hệ thống Google Cloud Email! Không thể gửi mã OTP. Vui lòng kiểm tra lại cấu hình.";
+                    $step = 1;
+                }
+
+            } else {
+                $error = "Không tìm thấy tài khoản nào khớp với Email/SĐT này!";
+                $step = 1;
+            }
+        }
     }
 }
 
@@ -36,26 +67,22 @@ if (isset($_POST['btn_step1'])) {
 // BƯỚC 2: XÁC THỰC MÃ OTP
 // =====================================
 if (isset($_POST['btn_step2'])) {
-    // Ghép 4 ô input lại thành 1 chuỗi
     $otp_nhap = $_POST['otp1'] . $_POST['otp2'] . $_POST['otp3'] . $_POST['otp4'];
     
     if (isset($_SESSION['reset_otp']) && $otp_nhap == $_SESSION['reset_otp']) {
-        // Đúng OTP, cấp "Giấy thông hành" và cho qua bước 3
         $_SESSION['otp_verified'] = true; 
         $step = 3;
     } else {
-        $error = "Mã OTP không chính xác! Vui lòng thử lại.";
+        $error = "Mã OTP không chính xác! Vui lòng kiểm tra lại hòm thư Email.";
         $step = 2;
     }
 }
 
 // =====================================
-// BƯỚC 3: CẬP NHẬT MẬT KHẨU MỚI (BẢO VỆ KÉP)
+// BƯỚC 3: CẬP NHẬT MẬT KHẨU MỚI
 // =====================================
 if (isset($_POST['btn_step3'])) {
     
-    // BẪY LỖI: CHỐNG HACK NHẢY CÓC (Cực kỳ quan trọng)
-    // Dù hacker có cố tình gửi form POST btn_step3, nếu không có cờ otp_verified thì bị chặn đứng
     if (!isset($_SESSION['otp_verified']) || $_SESSION['otp_verified'] !== true || !isset($_SESSION['reset_user_id'])) {
         die("<h3 style='color:red; text-align:center; margin-top:50px;'>Phát hiện gian lận! Yêu cầu bị từ chối.</h3>");
     }
@@ -64,16 +91,14 @@ if (isset($_POST['btn_step3'])) {
     $pass2 = $_POST['confirm_pass'];
     
     if ($pass1 === $pass2) {
-        // Mã hóa mật khẩu an toàn bằng bcrypt (password_hash)
         $hashed_pass = password_hash($pass1, PASSWORD_DEFAULT);
         $uid = (int)$_SESSION['reset_user_id'];
         
-        // Cập nhật mật khẩu mới vào database
         $sql_update = "UPDATE nguoi_dung SET mat_khau = '$hashed_pass' WHERE id = $uid";
         
         if ($conn->query($sql_update)) {
-            // Xóa sạch dấu vết Session sau khi xong việc
             unset($_SESSION['reset_user_id']);
+            unset($_SESSION['reset_email']);
             unset($_SESSION['reset_otp']);
             unset($_SESSION['otp_verified']);
             
@@ -82,7 +107,6 @@ if (isset($_POST['btn_step3'])) {
             header("Location: login.php");
             exit();
         } else {
-            // Báo lỗi cụ thể ra màn hình nếu Database bị trục trặc
             $error = "Lỗi hệ thống khi cập nhật: " . $conn->error;
             $step = 3;
         }
@@ -101,6 +125,9 @@ if (isset($_POST['btn_step3'])) {
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    
+    <!-- Script Google reCAPTCHA -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     
     <style>
         body { padding-top: 0 !important; background-color: #f9f9f9; }
@@ -142,38 +169,46 @@ if (isset($_POST['btn_step3'])) {
                 <div class="error-msg"><i class="fa-solid fa-triangle-exclamation"></i> <?php echo $error; ?></div>
             <?php endif; ?>
 
+            <!-- BƯỚC 1 -->
             <div id="step1" class="step-container <?php if($step == 1) echo 'active'; ?>">
                 <div class="step-title-inline">
                     <img src="image/logo.png" alt="Icon">
                     <h2>Quên mật khẩu</h2>
                 </div>
-                <p style="color: #666; margin-bottom: 25px; font-size: 14px;">Vui lòng nhập Email hoặc Số điện thoại đã đăng ký để nhận mã khôi phục.</p>
+                <p style="color: #666; margin-bottom: 25px; font-size: 14px;">Vui lòng nhập Email hoặc Số điện thoại đã đăng ký để nhận mã khôi phục qua Gmail.</p>
                 
                 <form method="POST" action="forgot.php">
                     <div class="auth-form-group">
                         <label>SĐT hoặc Email:</label>
                         <input type="text" name="email_phone" placeholder="Nhập sđt hoặc email của bạn" required>
                     </div>
-                    <button type="submit" name="btn_step1" class="btn-auth-primary">Nhận mã OTP</button>
+
+                    <!-- Khung reCAPTCHA v2 -->
+                    <div class="g-recaptcha" data-sitekey="6LdCn4ItAAAAACPhPcU-eo_YpsllyN0j9lpuRmEx" style="margin-bottom: 15px; display: flex; justify-content: center;"></div>
+
+                    <button type="submit" name="btn_step1" class="btn-auth-primary">Nhận mã OTP qua Email</button>
                 </form>
             </div>
 
+            <!-- BƯỚC 2 -->
             <div id="step2" class="step-container <?php if($step == 2) echo 'active'; ?>">
                 <div class="step-title-inline">
                     <img src="image/logo.png" alt="Icon">
                     <h2>Nhập mã xác nhận</h2>
                 </div>
                 
-                <div class="otp-simulator">
-                    <strong style="font-size: 12px; text-transform: uppercase;">[Mô phỏng tin nhắn SMS]</strong><br>
-                    Mã OTP của bạn là: <span style="font-size: 24px; color: #d9534f; font-weight: bold; letter-spacing: 3px; display: block; margin-top: 5px;"><?php echo isset($_SESSION['reset_otp']) ? $_SESSION['reset_otp'] : 'Lỗi'; ?></span>
+                <div class="otp-simulator" style="background: #e6fffa; border-color: #319795; color: #234e52;">
+                    <i class="fa-solid fa-paper-plane" style="font-size: 20px; color: #319795; margin-bottom: 5px;"></i><br>
+                    <strong style="font-size: 12px; text-transform: uppercase;">[Google Cloud Email Service]</strong><br>
+                    Mã OTP 4 số đã được gửi thành công đến hòm thư:<br>
+                    <b style="font-size: 15px; color: #2b6cb0; word-break: break-all;"><?php echo $_SESSION['reset_email'] ?? ''; ?></b>
                 </div>
 
-                <p style="color: #666; margin-bottom: 20px; font-size: 14px;">Vui lòng nhập mã gồm 4 số ở trên vào các ô bên dưới.</p>
+                <p style="color: #666; margin-bottom: 20px; font-size: 14px;">Vui lòng mở hòm thư Email của bạn và nhập mã gồm 4 số vào ô bên dưới.</p>
                 
                 <form method="POST" action="forgot.php">
                     <div class="otp-group">
-                        <input type="text" name="otp1" class="otp-input" maxlength="1" required>
+                        <input type="text" name="otp1" class="otp-input" maxlength="1" required autofocus>
                         <input type="text" name="otp2" class="otp-input" maxlength="1" required>
                         <input type="text" name="otp3" class="otp-input" maxlength="1" required>
                         <input type="text" name="otp4" class="otp-input" maxlength="1" required>
@@ -182,6 +217,7 @@ if (isset($_POST['btn_step3'])) {
                 </form>
             </div>
 
+            <!-- BƯỚC 3 -->
             <div id="step3" class="step-container <?php if($step == 3) echo 'active'; ?>">
                 <div class="step-title-inline">
                     <img src="image/logo.png" alt="Icon">

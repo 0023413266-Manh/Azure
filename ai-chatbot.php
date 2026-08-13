@@ -52,7 +52,7 @@ function clearChatHistory() {
     }
 }
 
-// 4. Biến thẻ [ANH:] và [NUT:] thành HTML
+// 4. Biến thẻ [ANH:] và [NUT:] thành HTML (Tự động chống lỗi 404 đường dẫn)
 function formatAiResponse(text) {
     if (!text) return '';
 
@@ -61,17 +61,40 @@ function formatAiResponse(text) {
     formatted = formatted.replace(/###\s*(.*?)(?:\n|<br>|$)/g, '<b style="color: #0078d4; font-size: 15px; display: block; margin-top: 8px;">$1</b>');
     formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
 
+    // Xử lý Hiển thị Ảnh
     formatted = formatted.replace(/\[ANH:\s*([^\]]+)\]/gi, function(match, src) {
         let cleanSrc = src.trim();
+        if (cleanSrc.startsWith('/')) cleanSrc = cleanSrc.substring(1);
+
+        // Nếu đang ở trong thư mục chi_tiet_sp/, tự động thêm ../ để tìm thấy ảnh
+        if (window.location.pathname.includes('/chi_tiet_sp/') && !cleanSrc.startsWith('../') && !cleanSrc.startsWith('http')) {
+            cleanSrc = '../' + cleanSrc;
+        }
+
         return '<div style="margin: 10px 0;">' +
                '<img src="' + cleanSrc + '" alt="Sản phẩm" style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.15); display: block;" ' +
-               'onerror="this.onerror=null; this.src=\'https://via.placeholder.com/300x200?text=Hình+Ảnh+Đồng+Hồ\';">' +
+               'onerror="this.onerror=null; this.src=\'../image/no-image.png\';">' +
                '</div>';
     });
 
+    // Xử lý Hiển thị Nút bấm xem chi tiết (Tự cân chỉnh link không lo 404)
     formatted = formatted.replace(/\[NUT:\s*([^\|]+)\|\s*([^\]]+)\]/gi, function(match, label, url) {
         let cleanLabel = label.trim();
         let cleanUrl = url.trim();
+
+        // Xóa dấu / ở đầu nếu có
+        if (cleanUrl.startsWith('/')) {
+            cleanUrl = cleanUrl.substring(1);
+        }
+
+        // Nếu người dùng đang đứng ở trong trang chi tiết (/chi_tiet_sp/...)
+        if (window.location.pathname.includes('/chi_tiet_sp/')) {
+            if (cleanUrl.startsWith('chi_tiet_sp/')) {
+                // Đi ra ngoài 1 cấp thư mục để vào đúng file
+                cleanUrl = '../' + cleanUrl;
+            }
+        }
+
         return '<div style="margin: 8px 0;">' +
                '<a href="' + cleanUrl + '" target="_blank" style="display: inline-block; padding: 8px 14px; background-color: #0078d4; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">' + cleanLabel + '</a>' +
                '</div>';

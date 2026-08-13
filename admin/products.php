@@ -1,7 +1,7 @@
 <?php
 session_start();
 include 'connect.php';
-
+require_once __DIR__ . '/../azure_blob_helper.php';
 if (!isset($_SESSION['admin_id'])) {
     header("Location: login.php");
     exit();
@@ -9,51 +9,66 @@ if (!isset($_SESSION['admin_id'])) {
 
 // 1. XỬ LÝ THÊM SẢN PHẨM MỚI
 if (isset($_POST['add_product'])) {
-    $ten_sp = $conn->real_escape_string($_POST['ten_san_pham']);
-    $gia_ban = (float)$_POST['gia_ban'];
-    $gia_cu = !empty($_POST['gia_cu']) ? (float)$_POST['gia_cu'] : "NULL";
+    $ten_sp         = $conn->real_escape_string($_POST['ten_san_pham']);
+    $gia_ban        = (float)$_POST['gia_ban'];
+    $gia_cu         = !empty($_POST['gia_cu']) ? (float)$_POST['gia_cu'] : "NULL";
     $id_thuong_hieu = (int)$_POST['id_thuong_hieu'];
-    $so_tham_chieu = $conn->real_escape_string($_POST['so_tham_chieu']);
-    $ton_kho = (int)$_POST['ton_kho'];
+    $so_tham_chieu  = $conn->real_escape_string($_POST['so_tham_chieu']);
+    $ton_kho        = (int)$_POST['ton_kho'];
+
     if ($ton_kho < 0) {
-    echo "<script>
-        alert('Lỗi: Số lượng tồn kho không được phép nhỏ hơn 0!');
-        history.back();
-    </script>";
-    exit();
-}
-    
-    $anh_san_pham = 'image/logo.png'; 
-    if (isset($_FILES['anh_san_pham']) && $_FILES['anh_san_pham']['error'] == 0) {
-        $target_dir = "../image/";
-        $file_name = time() . "_" . basename($_FILES["anh_san_pham"]["name"]);
-        if (move_uploaded_file($_FILES["anh_san_pham"]["tmp_name"], $target_dir . $file_name)) {
-            $anh_san_pham = "image/" . $file_name;
-        }
-    }
-
-    if($conn->query("INSERT INTO san_pham (id_thuong_hieu, ten_san_pham, gia_ban, gia_cu, anh_san_pham, so_tham_chieu, ton_kho) VALUES ($id_thuong_hieu, '$ten_sp', $gia_ban, $gia_cu, '$anh_san_pham', '$so_tham_chieu', $ton_kho)")) {
-        $_SESSION['toast_msg'] = "Đã thêm sản phẩm: $ten_sp";
-        $_SESSION['toast_type'] = "success";
-    }
-    header("Location: products.php"); exit();
-}
-
-if (isset($_FILES['anh_san_pham']) && $_FILES['anh_san_pham']['error'] == 0) {
-    // LẤY ĐUÔI FILE (jpg, png, jpeg...)
-    $file_ext = strtolower(pathinfo($_FILES["anh_san_pham"]["name"], PATHINFO_EXTENSION));
-    $allowed_ext = array("jpg", "jpeg", "png", "gif", "webp"); // Chỉ cho phép file ảnh
-    
-    if (in_array($file_ext, $allowed_ext)) {
-        $target_dir = "../image/";
-        $file_name = time() . "_" . basename($_FILES["anh_san_pham"]["name"]);
-        if (move_uploaded_file($_FILES["anh_san_pham"]["tmp_name"], $target_dir . $file_name)) {
-            $anh_san_pham = "image/" . $file_name;
-        }
-    } else {
-        echo "<script>alert('Lỗi: Chỉ được upload file hình ảnh (JPG, PNG, GIF)!'); history.back();</script>";
+        echo "<script>
+            alert('Lỗi: Số lượng tồn kho không được phép nhỏ hơn 0!');
+            history.back();
+        </script>";
         exit();
     }
+    
+    // Ảnh mặc định nếu người dùng không chọn ảnh
+    $anh_san_pham = 'https://webdongho2026.blob.core.windows.net/blob-anh-dongho/logo.png'; 
+
+    // 2. XỬ LÝ UPLOAD ẢNH LÊN AZURE BLOB STORAGE
+    if (isset($_FILES['anh_san_pham']) && $_FILES['anh_san_pham']['error'] == 0) {
+        
+        // Kiểm tra đuôi file hợp lệ
+        $file_ext    = strtolower(pathinfo($_FILES["anh_san_pham"]["name"], PATHINFO_EXTENSION));
+        $allowed_ext = array("jpg", "jpeg", "png", "gif", "webp");
+
+        if (in_array($file_ext, $allowed_ext)) {
+            
+            // Đẩy trực tiếp ảnh lên Azure Blob Storage
+            $azure_url = uploadToAzureBlob($_FILES['anh_san_pham']['tmp_name'], $_FILES['anh_san_pham']['name']);
+
+            if ($azure_url) {
+                // Gán đường link Azure thu được vào biến $anh_san_pham để lưu vào MySQL
+                $anh_san_pham = $azure_url; 
+            } else {
+                echo "<script>alert('Lỗi: Không thể upload ảnh lên Azure Blob Storage!'); history.back();</script>";
+                exit();
+            }
+
+        } else {
+            echo "<script>alert('Lỗi: Chỉ được upload file hình ảnh (JPG, PNG, GIF, WEBP)!'); history.back();</script>";
+            exit();
+        }
+    }
+
+    // 3. LƯU SẢN PHẨM VÀO DATABASE VỚI LINK AZURE BLOB
+    $sql = "INSERT INTO san_pham (id_thuong_hieu, ten_san_pham, gia_ban, gia_cu, anh_san_pham, so_tham_chieu, ton_kho) 
+            VALUES ($id_thuong_hieu, '$ten_sp', $gia_ban, $gia_cu, '$anh_san_pham', '$so_tham_chieu', $ton_kho)";
+
+    if ($conn->query($sql)) {
+        $_SESSION['toast_msg']  = "Đã thêm sản phẩm: $ten_sp";
+        $_SESSION['toast_type'] = "success";
+    }
+
+    // Xóa Cache Redis để trang khách hàng cập nhật danh sách mới ngay lập tức
+    if (function_exists('redis_del')) {
+        redis_del("danh_sach_san_pham");
+    }
+
+    header("Location: products.php"); 
+    exit();
 }
 
 // 2. XỬ LÝ CẬP NHẬT (SỬA) SẢN PHẨM
@@ -83,8 +98,9 @@ if (isset($_POST['edit_product'])) {
     } else {
         $conn->query("UPDATE san_pham SET id_thuong_hieu=$id_thuong_hieu, ten_san_pham='$ten_sp', gia_ban=$gia_ban, gia_cu=$gia_cu, so_tham_chieu='$so_tham_chieu', ton_kho=$ton_kho WHERE id=$id_sua");
     }
-    $_SESSION['toast_msg'] = "Đã cập nhật sản phẩm: $ten_sp";
+   $_SESSION['toast_msg'] = "Đã cập nhật sản phẩm: $ten_sp";
     $_SESSION['toast_type'] = "success";
+    redis_del("danh_sach_san_pham");
     header("Location: products.php"); exit();
 }
 
@@ -136,12 +152,25 @@ if (isset($_POST['delete_product_id'])) {
             $_SESSION['toast_type'] = "error";
         }
     }
+     redis_del("danh_sach_san_pham");
     header("Location: products.php");
     exit();
 }
 
-$sql_products = "SELECT p.*, t.ten_thuong_hieu FROM san_pham p LEFT JOIN thuong_hieu t ON p.id_thuong_hieu = t.id ORDER BY p.id DESC";
-$result_products = $conn->query($sql_products);
+$cache_key = "danh_sach_san_pham";
+$cached = redis_get($cache_key);
+
+if ($cached !== null) {
+    $products_array = json_decode($cached, true);
+} else {
+    $sql_products = "SELECT p.*, t.ten_thuong_hieu FROM san_pham p LEFT JOIN thuong_hieu t ON p.id_thuong_hieu = t.id ORDER BY p.id DESC";
+    $result_products = $conn->query($sql_products);
+    $products_array = [];
+    while ($row = $result_products->fetch_assoc()) {
+        $products_array[] = $row;
+    }
+    redis_set($cache_key, json_encode($products_array), 60);
+}
 
 $result_brands = $conn->query("SELECT * FROM thuong_hieu");
 $brands = [];
@@ -178,11 +207,20 @@ while($b = $result_brands->fetch_assoc()) { $brands[] = $b; }
                     <tr><th>ID</th><th>Hình ảnh</th><th>Tên sản phẩm</th><th>Giá tiền</th><th>Thương hiệu</th><th>Hành động</th></tr>
                 </thead>
                 <tbody>
-                    <?php if($result_products && $result_products->num_rows > 0): ?>
-                        <?php while($row = $result_products->fetch_assoc()): ?>
+                   <?php if(!empty($products_array)): ?>
+    <?php foreach($products_array as $row): ?>
                         <tr>
                             <td><strong>#SP<?php echo $row['id']; ?></strong></td>
-                            <td><img src="../<?php echo trim($row['anh_san_pham']); ?>" onerror="this.src='../image/logo.png'" width="50" style="border-radius:4px; max-height: 50px; max-width: 50px; object-fit: contain; background: #fff;"></td>
+                          <td>
+    <?php 
+        $anh_sp = trim($row['anh_san_pham']);
+        // Nếu không phải link HTTPS/HTTP thì tự thêm ../ phía trước cho link local
+        if (strpos($anh_sp, 'http') !== 0) {
+            $anh_sp = '../' . $anh_sp;
+        }
+    ?>
+    <img src="<?php echo $anh_sp; ?>" onerror="this.src='../image/logo.png'" width="50" style="border-radius:4px; max-height: 50px; max-width: 50px; object-fit: contain; background: #fff;">
+</td>
                             <td><?php echo $row['ten_san_pham']; ?></td>
                             <td style="font-weight: bold; color: #b58b5a;"><?php echo number_format($row['gia_ban'], 0, ',', '.'); ?>đ</td>
                             <td><?php echo $row['ten_thuong_hieu'] ?? 'Khác'; ?></td>
@@ -191,7 +229,7 @@ while($b = $result_brands->fetch_assoc()) { $brands[] = $b; }
                                 <button class="action-btn btn-delete" onclick="openDeleteModal(<?php echo $row['id']; ?>)"><i class="fa-solid fa-trash"></i></button>
                             </td>
                         </tr>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     <?php else: ?>
                         <tr><td colspan="6" style="text-align: center;">Chưa có sản phẩm nào</td></tr>
                     <?php endif; ?>

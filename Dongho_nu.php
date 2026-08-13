@@ -188,5 +188,8 @@ $result = $conn->query($sql);
         });
     }
 </script>
-</body>
-</html>
+<?php
+include 'ai-chatbot.php';
+// Dòng này BẮT BUỘC nằm ở cuối cùng của file
+include $path_prefix . 'footer.php'; 
+?>

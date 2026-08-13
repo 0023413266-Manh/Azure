@@ -11,12 +11,12 @@ if (isset($_GET['id'])) {
     $sql = "SELECT * FROM san_pham WHERE id = $id";
     $result = $conn->query($sql);
 
-    if ($result->num_rows > 0) {
+    if ($result && $result->num_rows > 0) {
         $row = $result->fetch_assoc();
         
         // Định dạng tiền tệ
         $gia_ban = number_format($row['gia_ban'], 0, ',', '.') . ' VNĐ';
-        $gia_cu = $row['gia_cu'] ? number_format($row['gia_cu'], 0, ',', '.') . ' VNĐ' : '';
+        $gia_cu = (!empty($row['gia_cu']) && $row['gia_cu'] > 0) ? number_format($row['gia_cu'], 0, ',', '.') . ' VNĐ' : '';
     } else {
         die("<h2 style='text-align:center; margin-top:50px;'>Sản phẩm không tồn tại trong hệ thống!</h2>");
     }
@@ -40,24 +40,34 @@ $custom_css = 'chi_tiet.css';
 
 // 6. NHÚNG HEADER CHUNG
 include $path_prefix . 'header.php';
+
+// 7. XỬ LÝ CHUẨN ĐƯỜNG DẪN ẢNH CHÍNH (Chống dính localhost vào link Azure)
+$raw_img = trim($row['anh_san_pham'] ?? '');
+if (!empty($raw_img) && strpos($raw_img, 'http') === 0) {
+    $anh_chinh = $raw_img; // Link Azure chuẩn
+} else {
+    $anh_chinh = (strpos($raw_img, '../') === 0) ? $raw_img : '../' . $raw_img;
+}
 ?>
-    
-    <div style="background-color: #f9f9f9; padding: 0;">
-       <div class="product-detail-container" style="padding-top: 20px; padding-bottom: 40px;">
+
+<div style="background-color: #f9f9f9; padding: 0;">
+    <div class="product-detail-container" style="padding-top: 20px; padding-bottom: 40px;">
         
-           <div class="product-gallery" style="border:none; padding: 0;">
+        <div class="product-gallery" style="border:none; padding: 0;">
             
+            <!-- 🖼️ 1. KHU VỰC ẢNH LỚN -->
             <div class="main-image-container">
                 <div class="gallery-nav">
                     <i class="fa-solid fa-chevron-left" id="prev-btn"></i>
                     <i class="fa-solid fa-chevron-right" id="next-btn"></i>
                 </div>
-                <img id="main-product-img" src="../<?php echo $row['anh_san_pham']; ?>" alt="<?php echo $row['ten_san_pham']; ?>" style="max-width: 350px;">
+                <img id="main-product-img" src="<?php echo $anh_chinh; ?>" alt="<?php echo htmlspecialchars($row['ten_san_pham']); ?>" style="max-width: 350px;" onerror="this.onerror=null; this.src='../image/no-image.png';">
             </div>
 
+            <!-- 🎞️ 2. DÀN THUMBNAIL (ĐÃ THÊM this.onerror=null ĐỂ CHỐNG LẶP VÔ HẠN) -->
             <div class="thumbnail-slider">
-                <img src="../<?php echo $row['anh_san_pham']; ?>" class="thumb active" onclick="changeImage(0)" alt="Ảnh chính">
-                
+                <!-- Thumbnail 0: Ảnh chính -->
+                <img src="<?php echo $anh_chinh; ?>" class="thumb active" onclick="changeImage(this)" alt="Ảnh chính" onerror="this.onerror=null; this.src='../image/no-image.png';">
                 <?php if (strpos($row['ten_san_pham'], 'LV') !== false || strpos($row['ten_san_pham'], 'Starbucks') !== false): ?>
                     <img src="../image/chitiet_rolex/rolexxanh_mat.png" class="thumb" onclick="changeImage(1)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
                     <img src="../image/chitiet_rolex/m126610lv-rolexxanh_anpham.jpg" class="thumb" onclick="changeImage(2)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
@@ -87,7 +97,7 @@ include $path_prefix . 'header.php';
                     <img src="../image/chitiet_rolex/rolexm52508_vongso.png" class="thumb" onclick="changeImage(2)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
                     <img src="../image/chitiet_rolex/rolexm52508_chuyendong.png" class="thumb" onclick="changeImage(3)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
                     <img src="../image/chitiet_rolex/rolexm52508_daydeo.png" class="thumb" onclick="changeImage(4)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
-                    <img src="../image/chitiet_rolex/m52508-0006_anpham.png" class="thumb" onclick="changeImage(5)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
+                    <img src="../image/chitiet_rolex/m52508-0006_anpham.jpg" class="thumb" onclick="changeImage(5)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
                     <img src="../image/chitiet_rolex/rolexm52508_duoicung.png" class="thumb" onclick="changeImage(6)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
 
                 <?php elseif (strpos($row['so_tham_chieu'], '126711CHNR') !== false): ?>
@@ -95,7 +105,7 @@ include $path_prefix . 'header.php';
                     <img src="../image/chitiet_rolex/rolex126711_matso.png" class="thumb" onclick="changeImage(2)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
                     <img src="../image/chitiet_rolex/rolex126711_chuyendong.png" class="thumb" onclick="changeImage(3)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
                     <img src="../image/chitiet_rolex/rolex126711_daydeo.png" class="thumb" onclick="changeImage(4)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
-                    <img src="../image/chitiet_rolex/m126711chnr-0002_anpham.png" class="thumb" onclick="changeImage(5)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
+                    <img src="../image/chitiet_rolex/m126711chnr-0002_anpham.avif" class="thumb" onclick="changeImage(5)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
                     <img src="../image/chitiet_rolex/rolex126711_duoicung.png" class="thumb" onclick="changeImage(6)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
 
                 <?php elseif (strpos($row['so_tham_chieu'], '126598TBR') !== false): ?>
@@ -133,15 +143,15 @@ include $path_prefix . 'header.php';
                 <?php elseif (strpos($row['ten_san_pham'], '126231') !== false || strpos($row['ten_san_pham'], 'Rhodium') !== false): ?>
                     <img src="../image/chitiet_rolex/rolex124060_vongso.png" class="thumb" onclick="changeImage(1)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
                     <img src="../image/chitiet_rolex/rolex124060_matso.png" class="thumb" onclick="changeImage(2)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
-                    <img src="../image/chitiet_rolex/rolex124060_daydeo.png" class="thumb" onclick="changeImage(3)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
+                    <img src="../image/chitiet_rolex/rolex126711_daydeo.png" class="thumb" onclick="changeImage(3)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
                     <img src="../image/chitiet_rolex/m126231-0015_anpham.avif" class="thumb" onclick="changeImage(4)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
                     <img src="../image/chitiet_rolex/rolex124060_duoicung.png" class="thumb" onclick="changeImage(5)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
-                    <img src="../image/chitiet_rolex/rolex124060_chuyendong.png" class="thumb" onclick="changeImage(6)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
+                    <img src="../image/chitiet_rolex/rolex_chuyendongCHNR.png" class="thumb" onclick="changeImage(6)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
 
                 <?php elseif (strpos($row['so_tham_chieu'], '136668LB') !== false): ?>
                     <img src="../image/chitiet_rolex/rolex136668LB_vongso.png" class="thumb" onclick="changeImage(1)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
                     <img src="../image/chitiet_rolex/rolex136668LB_matso.png" class="thumb" onclick="changeImage(2)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
-                    <img src="../image/chitiet_rolex/rolex136668LB_huyendong.png" class="thumb" onclick="changeImage(3)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
+                    <img src="../image/chitiet_rolex/rolex136668LB_chuyendong.png" class="thumb" onclick="changeImage(3)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
                     <img src="../image/chitiet_rolex/rolex136668LB_daydeo.png" class="thumb" onclick="changeImage(4)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
                     <img src="../image/chitiet_rolex/m136668lb-0001_anpham.jpg" class="thumb" onclick="changeImage(5)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
                     <img src="../image/chitiet_rolex/rolex136668LB_duoicung.png" class="thumb" onclick="changeImage(6)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
@@ -287,7 +297,7 @@ include $path_prefix . 'header.php';
             "../image/chitiet_rolex/rolexm52508_vongso.png",
             "../image/chitiet_rolex/rolexm52508_chuyendong.png",
             "../image/chitiet_rolex/rolexm52508_daydeo.png",
-            "../image/chitiet_rolex/m52508-0006_anpham.png",
+            "../image/chitiet_rolex/m52508-0006_anpham.jpg",
             "../image/chitiet_rolex/rolexm52508_duoicung.png" 
         ];
         <?php elseif (strpos($row['so_tham_chieu'], '126711CHNR') !== false): ?>
@@ -297,7 +307,7 @@ include $path_prefix . 'header.php';
             "../image/chitiet_rolex/rolex126711_matso.png",
             "../image/chitiet_rolex/rolex126711_chuyendong.png",
             "../image/chitiet_rolex/rolex126711_daydeo.png",
-            "../image/chitiet_rolex/m126711chnr-0002_anpham.png",
+            "../image/chitiet_rolex/image/chitiet_rolex/m126711chnr-0002_anpham.avif",
             "../image/chitiet_rolex/rolex126711_duoicung.png" 
         ];
         <?php elseif (strpos($row['so_tham_chieu'], '126598TBR') !== false): ?>
@@ -346,7 +356,7 @@ include $path_prefix . 'header.php';
             "../<?php echo $row['anh_san_pham']; ?>",
             "../image/chitiet_rolex/rolex124060_vongso.png",
             "../image/chitiet_rolex/rolex124060_matso.png",
-            "../image/chitiet_rolex/rolex124060_daydeo.png",
+            "../image/chitiet_rolex/rolex126711_daydeo.png",
             "../image/chitiet_rolex/m126231-0015_anpham.avif",
             "../image/chitiet_rolex/rolex124060_duoicung.png",
             "../image/chitiet_rolex/rolex124060_chuyendong.png" 
@@ -356,7 +366,7 @@ include $path_prefix . 'header.php';
             "../<?php echo $row['anh_san_pham']; ?>",
             "../image/chitiet_rolex/rolex136668LB_vongso.png",
             "../image/chitiet_rolex/rolex136668LB_matso.png",
-            "../image/chitiet_rolex/rolex136668LB_huyendong.png",
+            "../image/chitiet_rolex/rolex136668LB_chuyendong.png",
             "../image/chitiet_rolex/rolex136668LB_daydeo.png",
             "../image/chitiet_rolex/m136668lb-0001_anpham.jpg",
             "../image/chitiet_rolex/rolex136668LB_duoicung.png" 
@@ -691,7 +701,7 @@ include $path_prefix . 'header.php';
                         <p>Kính sapphire chống xước với lớp phủ chống phản chiếu đảm bảo khả năng đọc giờ tối ưu trong mọi điều kiện ánh sáng. Thiết kế Cyclops lens phóng đại ngày tháng gấp 2.5 lần, giúp việc đọc thông tin ngày tháng trở nên dễ dàng hơn.</p>
                     </div>
                 </div>
-                <div class="story-img"><img src="../image/chitiet_rolex/rolex_xanh_duoi_cung.png" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'"></div>
+                <div class="story-img"><img src="../image/chitiet_rolex/images (1).jpg" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'"></div>
             </div>
         </div>
     </section>
@@ -988,7 +998,7 @@ include $path_prefix . 'header.php';
                     <p>Vàng được ưa chuộng bởi sự lấp lánh và sang quý. Thép củng cố độ bền và độ tin cậy. Chúng kết hợp hài hòa các đặc tính tốt nhất của mình với nhau.</p>
                     <p>Đại diện cho một dấu ấn bản sắc của Rolex, Rolesor đã có trong các mẫu đồng hồ Rolex kể từ đầu thập niên 1930, và được đăng ký nhãn hiệu từ năm 1933. Đây là một trong số những điểm đặc trưng nổi bật của bộ sưu tập Oyster Perpetual.</p>
                 </div>
-                <div class="story-img"><img src="../image/chitiet_rolex/rolex124060_chuyendong.png" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'"></div>
+                <div class="story-img"><img src="../image/chitiet_rolex/rolex126711_chuyendong.png" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'"></div>
             </div>
             <div class="story-block">
                 <div class="story-text">
@@ -997,7 +1007,7 @@ include $path_prefix . 'header.php';
                     <p>Việc thiết kế, phát triển và sản xuất dây đeo Rolex và khóa cài, cũng như các bài kiểm tra nghiêm ngặt chúng phải đối mặt, đòi hỏi phải ứng dụng công nghệ cao.</p>
                     <p>Và với mọi bộ phận của đồng hồ, tính thẩm mỹ được đảm bảo dưới con mắt chuyên gia. Dây đeo đồng hồ kim loại Jubilee có thiết kế mềm mại và thoải mái với mối nối năm mảnh và được đặc biệt chế tác cho sự ra mắt của Oyster Perpetual Datejust vào năm 1945.</p>
                 </div>
-                <div class="story-img"><img src="../image/chitiet_rolex/rolex124060_daydeo.png" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'"></div>
+                <div class="story-img"><img src="../image/chitiet_rolex/rolex126711_daydeo.png" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'"></div>
             </div>
             <div class="story-block">
                  <div class="story-text">
@@ -1041,7 +1051,7 @@ include $path_prefix . 'header.php';
                     <p>Nhờ có xưởng đúc riêng của mình, Rolex có khả năng đúc hợp kim vàng 18 ct chất lượng cao nhất. Theo tỷ lệ bạc, đồng, bạch kim hoặc palladium, Rolex tạo ra được các loại vàng 18 ct: vàng kim, vàng hồng hoặc vàng trắng.</p>
                     <p>Chúng được làm bằng kim loại tinh khiết nhất và được kiểm tra tỉ mỉ trong một phòng thí nghiệm nội bộ với thiết bị hiện đại, trước khi vàng được tạo hình và chế tác với sự đầu tư chăm sóc chất lượng chu đáo nhất. Rolex cam kết độ xuất sắc bắt đầu từ bước nguyên liệu.</p>
                 </div>
-                <div class="story-img"><img src="../image/chitiet_rolex/rolex136668LB_huyendong.png" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'"></div>
+                <div class="story-img"><img src="../image/chitiet_rolex/rolex136668LB_chuyendong.png" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'"></div>
             </div>
             <div class="story-block">
                 <div class="story-text">
@@ -1427,7 +1437,7 @@ include $path_prefix . 'header.php';
                     <p>Chúng được làm bằng kim loại tinh khiết nhất và được kiểm tra tỉ mỉ trong một phòng thí nghiệm nội bộ với thiết bị hiện đại, trước khi vàng được tạo hình và chế tác với sự đầu tư chăm sóc chất lượng chu đáo nhất. Rolex cam kết độ xuất sắc bắt đầu từ bước nguyên liệu.</p>
                 </div>
                 <div class="story-img">
-                    <img src="../image/chitiet_rolex/rolex_chuyen_dong.png" alt="Vàng kim">
+                    <img src="../image/chitiet_rolex/rolex_chuyen_dong.png" alt="Vàng kim" onerror="this.onerror=null; this.src='../image/no-image.png';">
                 </div>
             </div>
             
@@ -1439,7 +1449,7 @@ include $path_prefix . 'header.php';
                     <p>Và với mọi bộ phận của đồng hồ, tính thẩm mỹ được đảm bảo dưới con mắt chuyên gia. Dây đeo President với mối nối 3 mảnh bán nguyệt được chế tác vào năm 1956 cho sự ra mắt của dòng sản phẩm Oyster Perpetual Day-Date. Dây đeo này đại diện sự tinh tế và thoải mái, luôn được làm bằng kim loại quý sau khi tuyển chọn cẩn thận.</p>
                 </div>
                 <div class="story-img">
-                    <img src="../image/chitiet_rolex/rolex_day_deo.png" alt="Dây đeo President">
+                    <img src="../image/chitiet_rolex/rolex_day_deo.png" alt="Dây đeo President" onerror="this.onerror=null; this.src='../image/no-image.png';">
                 </div>
             </div>
 
@@ -1453,7 +1463,7 @@ include $path_prefix . 'header.php';
                         <p>Với chứng nhận Superlative Chronometer, 278288rbr-0041 đảm bảo hiệu suất vượt trội trong mọi điều kiện. Rolex Datejust 31 Red Ombré không chỉ là một chiếc đồng hồ mà còn là biểu tượng của sự thành công và phong cách sống đẳng cấp.</p></div>
                 </div>
                 <div class="story-img">
-                    <img src="../image/chitiet_rolex/rolex_anh_duoi_cung.png" alt="Rolex Footer">
+                    <img src="../image/chitiet_rolex/rolex_anh_duoi_cung.png" alt="Rolex Footer" onerror="this.onerror=null; this.src='../image/no-image.png';">
                 </div>
             </div>
         </div>
@@ -1490,10 +1500,10 @@ include $path_prefix . 'header.php';
             $anpham_img = 'rolex116503_anpham.png';
             
         } elseif (strpos($row['so_tham_chieu'], '52508') !== false) {
-            $anpham_img = 'm52508-0006_anpham.png';
+            $anpham_img = 'm52508-0006_anpham.jpg';
             
         } elseif (strpos($row['so_tham_chieu'], '126711CHNR') !== false) {
-            $anpham_img = 'm126711chnr-0002_anpham.png';
+            $anpham_img = 'm126711chnr-0002_anpham.avif';
             
         } elseif (strpos($row['so_tham_chieu'], '126598TBR') !== false) {
             $anpham_img = 'm126598tbr-0001_anpham.avif'; 
@@ -1506,7 +1516,7 @@ include $path_prefix . 'header.php';
         }
         ?>
         <img src="../image/chitiet_rolex/<?php echo $anpham_img; ?>" 
-             style="max-width:300px; box-shadow: none !important; border-radius: 15px !important; border: none !important; outline: none !important;" alt="Ấn phẩm Rolex" class="publication-img" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
+             style="max-width:300px; box-shadow: none !important; border-radius: 15px !important; border: none !important; outline: none !important;" alt="Ấn phẩm Rolex" class="publication-img" onerror="this.onerror=null; this.src='../image/no-image.png';">
     </section>
 
     <style>
@@ -1625,7 +1635,7 @@ include 'module_danh_gia.php';
 
     <footer class="footer">
         <div class="footer-left">
-            <div class="footer-logo"><img src="../image/logo.png" alt="Timeless"></div>
+            <div class="footer-logo"><img src="../image/logo.png" alt="Timeless" onerror="this.onerror=null; this.src='../image/no-image.png';"></div>
             <h3 class="footer-title">TIMELESS</h3>
             <div class="footer-line"></div>
             <p>03-05 Pasteur, P. Nguyễn Thái Bình, Quận 1, TPHCM</p>
@@ -1666,7 +1676,7 @@ include 'module_danh_gia.php';
         <div class="sticky-bar-content">
             
             <div class="sticky-info">
-                <img src="../<?php echo $row['anh_san_pham']; ?>" alt="Rolex Mini">
+                <img src="<?php echo $anh_chinh; ?>" alt="Rolex Mini" onerror="this.onerror=null; this.src='../image/no-image.png';">
                 <h4 class="sticky-title"><?php echo $row['ten_san_pham']; ?></h4>
             </div>
 
@@ -1849,6 +1859,37 @@ include 'module_danh_gia.php';
             document.body.appendChild(modal);
         }
     </script>
+ <script>
+function changeImage(param) {
+    let mainImg = document.getElementById('main-product-img');
+    let thumbs = document.querySelectorAll('.thumb');
+    if (!mainImg || thumbs.length === 0) return;
+
+    // 1. Gỡ bỏ viền nâu (active) ở TẤT CẢ các ảnh nhỏ
+    thumbs.forEach(img => img.classList.remove('active'));
+
+    // 2. Cập nhật ảnh lớn VÀ bật viền nâu cho ảnh vừa được click
+    if (typeof param === 'object' && param.src) {
+        // Nếu truyền `this`
+        mainImg.src = param.src;
+        param.classList.add('active');
+    } 
+    else if (typeof param === 'number') {
+        // Nếu truyền số thứ tự (0, 1, 2...)
+        if (thumbs[param]) {
+            mainImg.src = thumbs[param].src;
+            thumbs[param].classList.add('active');
+        }
+    } 
+    else if (typeof param === 'string') {
+        // Nếu truyền chuỗi link (this.src)
+        mainImg.src = param;
+        thumbs.forEach(img => {
+            if (img.src === param) img.classList.add('active');
+        });
+    }
+}
+</script>
 <?php
 include '../ai-chatbot.php';
 // Dòng này BẮT BUỘC nằm ở cuối cùng của file

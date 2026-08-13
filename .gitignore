@@ -1,15 +1,57 @@
-# Giấu file bí mật chứa Key
+# ==========================================
+# 1. BẢO MẬT & MÔI TRƯỜNG (CỰC KỲ QUAN TRỌNG - BẮT BỘC)
+# ==========================================
+# Giấu tất cả API Key Azure, Google Client ID, DB Password
 .env
+.env.*
+!.env.example
 
-# Bỏ qua các thư mục thư viện cực nặng
+# File kết nối CSDL cục bộ (nếu có mật khẩu riêng)
+/admin/connect.php
+
+# Các file chứng chỉ bảo mật (nếu có)
+*.pem
+*.key
+*.crt
+
+# ==========================================
+# 2. THƯ VIỆN PHỤ THUỘC (CỰC NẶNG)
+# ==========================================
 /node_modules/
 /vendor/
 
-# Bỏ qua file lưu trữ backup và ảnh upload từ user
+# ==========================================
+# 3. DỮ LIỆU UPLOAD, BACKUP & DUMP CSDL
+# ==========================================
 /admin/backups/
 /backups/
 /uploads/
+*.sql
+*.gz
+*.zip
 
-# File rác hệ thống
+# ==========================================
+# 4. FILE LOGS & BỘ NHỚ TẠM (LOGS & TEMP)
+# ==========================================
+*.log
+/logs/
+/shared/logs/
+/tmp/
+
+# ==========================================
+# 5. FILE CẤU HÌNH CỦA IDE / TRÌNH SOẠN THẢO CODE
+# ==========================================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# ==========================================
+# 6. FILE RÁC HỆ ĐIỀU HÀNH (WINDOWS / MAC)
+# ==========================================
 .DS_Store
 Thumbs.db
+desktop.ini

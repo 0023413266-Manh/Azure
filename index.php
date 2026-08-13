@@ -536,6 +536,7 @@ document.addEventListener("DOMContentLoaded", function() {
 <script>
 
 <?php
+include 'thongbao.php';
 include 'ai-chatbot.php';
 // 3. FOOTER BẮT BUỘC PHẢI NẰM Ở DÒNG CUỐI CÙNG CỦA FILE
 include 'footer.php'; 

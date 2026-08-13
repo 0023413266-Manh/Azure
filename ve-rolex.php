@@ -1,8 +1,8 @@
 <?php
-session_start();
-include 'admin/connect.php';
+$path_prefix = ''; 
+include $path_prefix . 'header.php';
 ?>
-<!DOCTYPE html>
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -13,73 +13,11 @@ include 'admin/connect.php';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 </head>
-<body>
-
-    <div id="smart-header">
         
-        <header class="top-header">
-            <div class="logo">
-                <a href="index.php" class="logo-link">
-                    <h1>TIMELESS</h1>
-                    <img src="image/logo.png" alt="Timeless Icon">
-                </a>
-            </div>
-
-            <div class="user-box">
-                <?php 
-                if(isset($_SESSION['user_id'])) {
-                    $uid = $_SESSION['user_id'];
-                    $get_name = $conn->query("SELECT ho_ten FROM nguoi_dung WHERE id = $uid");
-                    $ten_ngan = "User";
-                    if($get_name && $get_name->num_rows > 0) {
-                        $row_name = $get_name->fetch_assoc();
-                        $mang_ten = explode(' ', trim($row_name['ho_ten']));
-                        $ten_ngan = end($mang_ten); 
-                    }
-                ?>
-                    <a href="profile.php" style="text-decoration: none;"> 
-                        <button class="btn-user" style="color: #b58b5a; font-weight: bold; border-color: #b58b5a;">
-                            <?php echo $ten_ngan; ?> <i class="fa-solid fa-circle-user"></i>
-                        </button>
-                    </a>
-                <?php } else { ?>
-                    <a href="login.php" style="text-decoration: none;"> 
-                        <button class="btn-user">User <i class="fa-solid fa-circle-user"></i></button>
-                    </a>
-                <?php } ?>
-            </div>
-        </header>
-
-        <nav class="main-nav">
-            
-            <a href="explore.php" class="header-back-arrow" title="Quay lại Khám phá">
+            <a href="explore.php" class="header-back-arrow" title="Quay lại Khám phá" style="display: inline-block; margin-top: -190px; margin-left: 20px;">
                 <i class="fa-solid fa-arrow-left"></i>
             </a>
-
-            <ul>
-                <li><a href="index.php">TRANG CHỦ</a></li>
-                <li class="dropdown">
-                    <a href="#">THƯƠNG HIỆU <i class="fa fa-caret-down"></i></a>
-                    <ul class="dropdown-content">
-                        <li><a href="all_rolex.php">ROLEX</a></li>
-                        <li><a href="all_omega.php">OMEGA</a></li>
-                        <li><a href="all_casio.php">CASIO</a></li>
-                        <li><a href="all_seiko.php">SEIKO</a></li>
-                        <li><a href="all_hublot.php">HUBLOT</a></li>
-                    </ul>
-                </li>
-                <li class="dropdown">
-                    <a href="#">SẢN PHẨM <i class="fa fa-caret-down"></i></a>
-                    <ul class="dropdown-content">
-                        <li><a href="Dongho_nam.php">DÀNH CHO NAM</a></li>
-                        <li><a href="Dongho_nu.php">DÀNH CHO NỮ</a></li>
-                    </ul>
-                </li>
-                <li><a href="explore.php" style="color: #b58b5a; font-weight: bold;">KHÁM PHÁ</a></li>
-                <li><a href="contact.php">LIÊN HỆ</a></li>
-            </ul>
-        </nav>
-    </div> 
+        
     <div class="article-page-container">
         
         <div class="article-header">
@@ -204,7 +142,6 @@ include 'admin/connect.php';
         </div>
     </div>
 
-
     <footer class="footer">
         <div class="footer-left">
             <div class="footer-logo">
@@ -222,39 +159,38 @@ include 'admin/connect.php';
         </div>
 
         <div class="footer-right">
-        
-        <div class="footer-column">
-            <h4>VỀ CHÚNG TÔI</h4>
-            <ul>
-                <li><a href="index.php">Trang chủ</a></li> 
-                <li><a href="contact.php">Liên hệ</a></li>
-                <li><a href="explore.php">Kênh truyền thông lớn nhất</a></li>
-            </ul>
-        </div>
-
-        <div class="footer-column">
-            <h4>CHÍNH SÁCH KHÁCH HÀNG</h4> <ul>
-<li><a href="chinh_sach.php?type=trahang">Chính sách đổi trả hàng</a></li>
-<li><a href="chinh_sach.php?type=baohanh">Chính sách bảo hành sản phẩm</a></li>
-<li><a href="chinh_sach.php?type=vanchuyen">Chính sách vận chuyển</a></li>
-<li><a href="chinh_sach.php?type=dieukhoan">Điều khoản sử dụng</a></li>
-<li><a href="chinh_sach.php?type=thanhtoan">Chính sách thanh toán</a></li>
-                
+            <div class="footer-column">
+                <h4>VỀ CHÚNG TÔI</h4>
+                <ul>
+                    <li><a href="index.php">Trang chủ</a></li> 
+                    <li><a href="contact.php">Liên hệ</a></li>
+                    <li><a href="explore.php">Kênh truyền thông lớn nhất</a></li>
                 </ul>
-        </div>
+            </div>
 
-        <div class="footer-column">
-            <h4>KHÁM PHÁ THƯƠNG HIỆU</h4>
-            <ul>
-                <li><a href="all_rolex.php">Rolex</a></li>
-                <li><a href="all_hublot.php">Hublot</a></li>
-                <li><a href="all_omega.php">Omega</a></li>
-                <li><a href="all_casio.php">Casio</a></li>
-                <li><a href="all_seiko.php">Seiko</a></li>
-            </ul>
+            <div class="footer-column">
+                <h4>CHÍNH SÁCH KHÁCH HÀNG</h4> 
+                <ul>
+                    <li><a href="chinh_sach.php?type=trahang">Chính sách đổi trả hàng</a></li>
+                    <li><a href="chinh_sach.php?type=baohanh">Chính sách bảo hành sản phẩm</a></li>
+                    <li><a href="chinh_sach.php?type=vanchuyen">Chính sách vận chuyển</a></li>
+                    <li><a href="chinh_sach.php?type=dieukhoan">Điều khoản sử dụng</a></li>
+                    <li><a href="chinh_sach.php?type=thanhtoan">Chính sách thanh toán</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-column">
+                <h4>KHÁM PHÁ THƯƠNG HIỆU</h4>
+                <ul>
+                    <li><a href="all_rolex.php">Rolex</a></li>
+                    <li><a href="all_hublot.php">Hublot</a></li>
+                    <li><a href="all_omega.php">Omega</a></li>
+                    <li><a href="all_casio.php">Casio</a></li>
+                    <li><a href="all_seiko.php">Seiko</a></li>
+                </ul>
+            </div>
         </div>
-    </div>
-</footer>
+    </footer>
 
     <script>
         const smartHeader = document.getElementById('smart-header');
@@ -270,5 +206,9 @@ include 'admin/connect.php';
             lastScrollTop = currentScroll <= 0 ? 0 : currentScroll; 
         });
     </script>
-</body>
-</html>
+
+<?php
+//include 'thongbao.php';
+include 'ai-chatbot.php';
+include $path_prefix . 'footer.php'; 
+?>

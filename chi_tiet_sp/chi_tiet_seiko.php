@@ -11,12 +11,12 @@ if (isset($_GET['id'])) {
     $sql = "SELECT * FROM san_pham WHERE id = $id";
     $result = $conn->query($sql);
 
-    if ($result->num_rows > 0) {
+    if ($result && $result->num_rows > 0) {
         $row = $result->fetch_assoc();
         
         // Định dạng tiền tệ
         $gia_ban = number_format($row['gia_ban'], 0, ',', '.') . ' VNĐ';
-        $gia_cu = $row['gia_cu'] ? number_format($row['gia_cu'], 0, ',', '.') . ' VNĐ' : '';
+        $gia_cu = (!empty($row['gia_cu']) && $row['gia_cu'] > 0) ? number_format($row['gia_cu'], 0, ',', '.') . ' VNĐ' : '';
     } else {
         die("<h2 style='text-align:center; margin-top:50px;'>Sản phẩm không tồn tại trong hệ thống!</h2>");
     }
@@ -27,7 +27,7 @@ if (isset($_GET['id'])) {
 // 4. KIỂM TRA YÊU THÍCH
 $is_favorited = false;
 if (isset($_SESSION['user_id'])) {
-    $uid = $_SESSION['user_id'];
+    $uid = intval($_SESSION['user_id']);
     $check_fav = $conn->query("SELECT id FROM yeu_thich WHERE id_nguoi_dung = $uid AND id_san_pham = $id");
     if ($check_fav && $check_fav->num_rows > 0) {
         $is_favorited = true;
@@ -38,151 +38,101 @@ if (isset($_SESSION['user_id'])) {
 $path_prefix = '../'; 
 $custom_css = 'chi_tiet.css';
 
-//$path_prefix = ''; // Khai báo đường dẫn (nếu ở thư mục con thì thay bằng '../')
 include $path_prefix . 'header.php';
 
+// 6. XỬ LÝ CHUẨN ĐƯỜNG DẪN ẢNH CHÍNH
+$raw_img = trim($row['anh_san_pham'] ?? '');
+if (!empty($raw_img) && strpos($raw_img, 'http') === 0) {
+    $anh_chinh = $raw_img;
+} else {
+    $anh_chinh = (strpos($raw_img, '../') === 0) ? $raw_img : '../' . $raw_img;
+}
 ?>
-    
-    <div style="background-color: #f9f9f9; padding: 0;">
-       <div class="product-detail-container" style="padding-top: 20px; padding-bottom: 40px;">
+
+<div style="background-color: #f9f9f9; padding: 30px 0;">
+    <div class="product-detail-container" style="max-width: 1200px; margin: 0 auto; display: flex; gap: 30px; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
         
-           <div class="product-gallery" style="border:none; padding: 0;">
+        <!-- 🖼️ KHU VỰC BÊN TRÁI: ALBUM ẢNH -->
+        <div class="product-gallery" style="flex: 1; border:none; padding: 0;">
             
-            <div class="main-image-container">
+            <div class="main-image-container" style="position: relative; text-align: center; margin-bottom: 15px;">
                 <div class="gallery-nav">
                     <i class="fa-solid fa-chevron-left" id="prev-btn"></i>
                     <i class="fa-solid fa-chevron-right" id="next-btn"></i>
                 </div>
-                <img id="main-product-img" src="../<?php echo $row['anh_san_pham']; ?>" alt="<?php echo $row['ten_san_pham']; ?>" style="max-width: 350px;">
+                <img id="main-product-img" src="<?php echo $anh_chinh; ?>" alt="<?php echo htmlspecialchars($row['ten_san_pham']); ?>" style="max-width: 380px; width: 100%; border-radius: 8px;" onerror="this.onerror=null; this.src='../image/no-image.png';">
             </div>
 
-            <div class="thumbnail-slider">
-                <img src="../<?php echo $row['anh_san_pham']; ?>" class="thumb active" onclick="changeImage(0)" alt="Ảnh chính">
+            <div class="thumbnail-slider" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <!-- Thumbnail 0: Ảnh chính sản phẩm -->
+                <img src="<?php echo $anh_chinh; ?>" class="thumb active" onclick="changeImage(this)" onerror="this.onerror=null; this.src='../image/no-image.png';" alt="Ảnh chính">
 
                 <?php
-                // 2. Định nghĩa danh sách ảnh phụ cho từng sản phẩm (Dựa trên ID trong Database)
-                // Bạn chỉ cần thêm ID và danh sách ảnh tương ứng vào đây
                 $gallery = [
-                    45 => [ // Sản phẩm ID = 1 (Ví dụ Rolex Submariner)
-                        'seiko1-1.png', 'seiko1-2.png', 'seiko1-3.png', 'seiko1-4.png', 'seiko-anpham.png',
-                    ],
-                    46 => [ // Sản phẩm ID = 2 (Ví dụ Hublot Big Bang)
-                        'seiko2-1.png', 'seiko2-2.png', 'seiko2-3.png', 'seiko2-4.png', 'seiko-anpham.png'
-                    ],
-                    47 => [ // Sản phẩm ID = 3
-                        'seiko3-1.png', 'seiko3-2.png', 'seiko3-3.png', 'seiko3-4.png', 'seiko-anpham.png'
-                    ],
-                    48 => [ // Sản phẩm ID = 3
-                        'seiko4-1.png', 'seiko4-2.png', 'seiko4-3.png', 'seiko4-4.png', 'seiko-anpham.png'
-                    ],
-                    49 => [ // Sản phẩm ID = 3
-                        'seiko5-1.png', 'seiko5-2.png', 'seiko5-3.png', 'seiko5-4.png', 'seiko-anpham.png'
-                    ],
-                    50 => [ // Sản phẩm ID = 3
-                        'seiko6-1.png', 'seiko6-2.png', 'seiko6-3.png', 'seiko6-4.png', 'seiko-anpham.png'
-                    ],
-                    51 => [ // Sản phẩm ID = 3
-                        'seiko7-1.png', 'seiko7-2.png', 'seiko7-3.png', 'seiko7-4.png', 'seiko-anpham.png'
-                    ],
-                    52 => [ // Sản phẩm ID = 3
-                        'seiko8-1.png', 'seiko8-2.png', 'seiko8-3.png', 'seiko8-4.png', 'seiko-anpham.png'
-                    ],
+                    45 => ['seiko1-1.png', 'seiko1-2.png', 'seiko1-3.png', 'seiko1-4.png', 'seiko-anpham.png'],
+                    46 => ['seiko2-1.png', 'seiko2-2.png', 'seiko2-3.png', 'seiko2-4.png', 'seiko-anpham.png'],
+                    47 => ['seiko3-1.png', 'seiko3-2.png', 'seiko3-3.png', 'seiko3-4.png', 'seiko-anpham.png'],
+                    48 => ['seiko4-1.png', 'seiko4-2.png', 'seiko4-3.png', 'seiko4-4.png', 'seiko-anpham.png'],
+                    49 => ['seiko5-1.png', 'seiko5-2.png', 'seiko5-3.png', 'seiko5-4.png', 'seiko-anpham.png'],
+                    50 => ['seiko6-1.png', 'seiko6-2.png', 'seiko6-3.png', 'seiko6-4.png', 'seiko-anpham.png'],
+                    51 => ['seiko7-1.png', 'seiko7-2.png', 'seiko7-3.png', 'seiko7-4.png', 'seiko-anpham.png'],
+                    52 => ['seiko8-1.png', 'seiko8-2.png', 'seiko8-3.png', 'seiko8-4.png', 'seiko-anpham.png'],
                 ];
 
-                // 3. Lấy ID của sản phẩm hiện tại
                 $current_id = $row['id'];
 
-                // 4. Kiểm tra xem ID này có trong danh sách gallery không
                 if (isset($gallery[$current_id])) {
-                    foreach ($gallery[$current_id] as $index => $file_name) {
-                        // $index + 1 vì ảnh chính đã là số 0 rồi
-                        echo '<img src="../image/chitiet_seiko/' . $file_name . '" class="thumb" onclick="changeImage(' . ($index + 1) . ')" alt="Ảnh chi tiết">';
+                    foreach ($gallery[$current_id] as $file_name) {
+                        echo '<img src="../image/chitiet_seiko/' . htmlspecialchars($file_name) . '" class="thumb" onclick="changeImage(this)" onerror="this.onerror=null; this.src=\'../image/no-image.png\';" alt="Ảnh chi tiết">';
                     }
                 }
                 ?>
             </div>
-            
 
             <?php
-            // 1. Tạo danh sách nội dung cho từng dòng sản phẩm
             $content_map = [
-                //1
-                ' Seiko 42.4mm Nam SRPD25K1' => [
+                'Seiko 42.4mm Nam SRPD25K1' => [
                     'title' => 'NỔI BẬT VỚI KHẢ NĂNG HIỂN THỊ NGÀY',
                     'desc'  => 'Seiko SRPD25K1 được trang bị cửa sổ lịch ngày – thứ tại vị trí 3 giờ, giúp người dùng dễ dàng theo dõi thông tin thời gian trong sinh hoạt hằng ngày. Chức năng này được vận hành bởi bộ máy cơ tự động Seiko 4R36, nổi tiếng với độ bền bỉ, ổn định và khả năng lên cót tay tiện lợi.',
                     'color' => '#0c6a3f'
                 ],
-                //2
                 'Seiko 39.5mm Nam SRPK17K1' => [
                     'title' => 'NỔI BẬT VỚI KHẢ NĂNG HIỂN THỊ NGÀY',
-                    'desc'  => 'Seiko 5 Sports SRPK17K1 – 39.5mm  Thiết kế thể thao cổ điển đặc trưng Seiko 5 Sports, SRPK17K1 sở hữu ô hiển thị Day–Date tại vị trí 3 giờ, giúp người dùng dễ dàng theo dõi ngày và thứ trong sinh hoạt hằng ngày. Cơ chế chuyển lịch mượt mà, rõ ràng, thể hiện sự thực dụng và chính xác – triết lý cốt lõi của Seiko.',
+                    'desc'  => 'Seiko 5 Sports SRPK17K1 – 39.5mm Thiết kế thể thao cổ điển đặc trưng Seiko 5 Sports, SRPK17K1 sở hữu ô hiển thị Day–Date tại vị trí 3 giờ, giúp người dùng dễ dàng theo dõi ngày và thứ trong sinh hoạt hằng ngày.',
                     'color' => '#000'
                 ],
-                //3
                 'Seiko 41.7mm Nam SRPD41J1' => [
                     'title' => 'NỔI BẬT VỚI KHẢ NĂNG HIỂN THỊ NGÀY',
-                    'desc'  => 'Seiko SRPD41J1 được trang bị ô lịch ngày hiển thị rõ ràng tại vị trí 3 giờ, mang lại sự tiện dụng cao trong sinh hoạt hằng ngày. Mặt số xanh navy đậm kết hợp cọc số và kim phủ dạ quang Lumibrite đặc trưng của Seiko giúp khả năng quan sát luôn rõ nét trong nhiều điều kiện ánh sáng, thể hiện tinh thần thể thao hiện đại và tính thực dụng đặc trưng của dòng Seiko 5 Sports',
+                    'desc'  => 'Seiko SRPD41J1 được trang bị ô lịch ngày hiển thị rõ ràng tại vị trí 3 giờ, mang lại sự tiện dụng cao trong sinh hoạt hằng ngày.',
                     'color' => '#a88d34'
                 ],
-                //4
-                ' Seiko Prospex Samurai 43.8mm Nam SRPE33K1' => [
+                'Seiko Prospex Samurai 43.8mm Nam SRPE33K1' => [
                     'title' => 'NỔI BẬT VỚI KHẢ NĂNG HIỂN THỊ NGÀY',
-                    'desc'  => 'Seiko Prospex Samurai SRPE33K1 được trang bị ô lịch ngày đặt tại vị trí 3 giờ, hiển thị rõ ràng, dễ quan sát trong mọi điều kiện. Kim và cọc số phủ dạ quang Lumibrite đặc trưng của Seiko, hỗ trợ đọc giờ hiệu quả ngay cả dưới nước hoặc trong môi trường thiếu sáng.',
+                    'desc'  => 'Seiko Prospex Samurai SRPE33K1 được trang bị ô lịch ngày đặt tại vị trí 3 giờ, hiển thị rõ ràng, dễ quan sát trong mọi điều kiện.',
                     'color' => '#6b1823'
                 ],
-                //5
-                ' Seiko Prospex Samurai  40.2mm Nam SARX123' => [
+                'Seiko Prospex Samurai 40.2mm Nam SARX123' => [
                     'title' => 'NỔI BẬT VỚI KHẢ NĂNG HIỂN THỊ NGÀY',
-                    'desc'  => 'Seiko SARX123 được trang bị cửa sổ lịch ngày tại vị trí 3 giờ, hiển thị rõ ràng và cân đối trên mặt số mang họa tiết tinh xảo đặc trưng Presage. Chức năng lịch ngày vận hành ổn định cùng bộ máy cơ tự động in-house của Seiko, mang lại sự tiện dụng cao trong sinh hoạt hằng ngày và giữ trọn vẻ thanh lịch, chuẩn mực của đồng hồ Nhật Bản cao cấp.',
+                    'desc'  => 'Seiko SARX123 được trang bị cửa sổ lịch ngày tại vị trí 3 giờ, hiển thị rõ ràng và cân đối trên mặt số mang họa tiết tinh xảo đặc trưng Presage.',
                     'color' => '#602a2e'
                 ],
-                //6
                 'Seiko 43.8mm Nam SRPE37J' => [
                     'title' => 'NỔI BẬT VỚI KHẢ NĂNG HIỂN THỊ NGÀY',
-                    'desc'  => 'Seiko SRPE37J được trang bị cửa sổ lịch ngày tại vị trí 3 giờ, hiển thị rõ ràng, dễ quan sát trong mọi điều kiện sử dụng. Thiết kế lịch ngày hài hòa với mặt số xanh lá đặc trưng, mang lại sự tiện lợi thiết thực cho sinh hoạt hằng ngày, đồng thời giữ trọn tinh thần mạnh mẽ của dòng đồng hồ lặn Seiko Prospex.',
+                    'desc'  => 'Seiko SRPE37J được trang bị cửa sổ lịch ngày tại vị trí 3 giờ, hiển thị rõ ràng, dễ quan sát trong mọi điều kiện sử dụng.',
                     'color' => '#5f4a05'
                 ],
-                //7
                 'Seiko 39mm Nam SSC819P1' => [
                     'title' => 'NỔI BẬT VỚI KHẢ NĂNG HIỂN THỊ NGÀY',
-                    'desc'  => 'Seiko SSC819P1 thuộc bộ sưu tập Prospex Speedtimer, lấy cảm hứng từ những mẫu chronograph thể thao huyền thoại của Seiko. Với đường kính 39mm, đồng hồ mang lại tỷ lệ cân đối, dễ đeo, phù hợp nhiều cỡ cổ tay nhưng vẫn giữ được vẻ mạnh mẽ và năng động đặc trưng của dòng Speedtimer.',
+                    'desc'  => 'Seiko SSC819P1 thuộc bộ sưu tập Prospex Speedtimer, lấy cảm hứng từ những mẫu chronograph thể thao huyền thoại của Seiko.',
                     'color' => '#15844b'
                 ],
-                //8
                 'Seiko 43.8mm Nam SRPG21J1' => [
                     'title' => 'NỔI BẬT VỚI KHẢ NĂNG HIỂN THỊ NGÀY',
-                    'desc'  => 'Seiko SRPG21J1 được trang bị ô lịch ngày và thứ tại vị trí 3 giờ, bố cục gọn gàng, dễ quan sát. Cửa sổ lịch hiển thị sắc nét, hỗ trợ người dùng quản lý thời gian hiệu quả trong sinh hoạt hằng ngày cũng như khi di chuyển, làm việc hay hoạt động ngoài trời. Chức năng lịch được vận hành ổn định bởi bộ máy cơ tự động Seiko Cal.4R36, đảm bảo độ chính xác và độ tin cậy lâu dài theo tiêu chuẩn chế tác Nhật Bản.',
+                    'desc'  => 'Seiko SRPG21J1 được trang bị ô lịch ngày và thứ tại vị trí 3 giờ, bố cục gọn gàng, dễ quan sát.',
                     'color' => '#245f8c'
                 ],
-                //9
-                'Seiko 43.2mm Nam SRPG59J1' => [
-                    'title' => 'NỔI BẬT VỚI KHẢ NĂNG HIỂN THỊ NGÀY',
-                    'desc'  => 'Rõ ràng – thực dụng – chuẩn tinh thần Field Watch
-Seiko SRPG59J1 được trang bị ô lịch ngày và thứ tại vị trí 3 giờ, hiển thị rõ ràng, dễ quan sát. Bố cục mặt số cân đối, hỗ trợ người dùng quản lý thời gian hiệu quả trong sinh hoạt hằng ngày cũng như khi làm việc hoặc di chuyển. Chức năng lịch vận hành ổn định nhờ bộ máy cơ tự động Seiko Cal.4R36, nổi tiếng về độ bền và độ chính xác.',
-                    'color' => '#d4af37'
-                ],
-                //10
-                'Seiko Presage Automatic 40mm Nam SARY111' => [
-                    'title' => 'NỔI BẬT VỚI KHẢ NĂNG HIỂN THỊ NGÀY',
-                    'desc'  => 'Seiko SARY111 sở hữu mặt số thanh lịch với ô lịch ngày đặt tại vị trí 3 giờ, mang lại khả năng quan sát rõ ràng và tiện dụng trong sinh hoạt hằng ngày. Thiết kế cổ điển kết hợp cùng bộ máy cơ tự động bền bỉ giúp mẫu đồng hồ trở thành lựa chọn lý tưởng cho quý ông yêu thích sự tinh tế và chuẩn mực Nhật Bản.',
-                    'color' => '#4b3e14'
-                ],
-                //11
-                'Seiko Presage Automatic Open Heart 33mm Nữ SSA875J1' => [
-                    'title' => 'NỔI BẬT VỚI KHẢ NĂNG HIỂN THỊ NGÀY',
-                    'desc'  => 'Seiko SSA875J1 gây ấn tượng với thiết kế lộ tim (Open Heart) tinh xảo trên mặt số, cho phép quan sát chuyển động nhịp nhàng của bộ máy cơ. Ô lịch ngày được bố trí gọn gàng, vừa tăng tính tiện dụng vừa giữ được vẻ nữ tính thanh lịch.',
-                    'color' => '#70684d'
-                ],
-                //12
-                'Seiko Prospex Sea Watch SPB381 42mm' => [
-                    'title' => 'NỔI BẬT VỚI KHẢ NĂNG HIỂN THỊ NGÀY',
-                    'desc'  => 'Seiko Prospex Sea SPB381 42mm được trang bị lịch ngày đặt tại vị trí 3 giờ, hiển thị rõ ràng và dễ quan sát trong mọi điều kiện ánh sáng. Tính năng lịch được tích hợp mượt mà cùng bộ máy cơ tự động, đảm bảo độ chính xác cao và tính tiện dụng cho sinh hoạt hằng ngày cũng như các chuyến lặn biển chuyên nghiệp.',
-                    'color' => '#c6b88b'
-                ],
-                
             ];
 
-            // 2. Tìm xem tên sản phẩm hiện tại thuộc dòng nào trong danh sách trên
             $current_content = [
                 'title' => 'CHI TIẾT SẢN PHẨM',
                 'desc'  => 'Thông tin sản phẩm đang được cập nhật.',
@@ -190,7 +140,7 @@ Seiko SRPG59J1 được trang bị ô lịch ngày và thứ tại vị trí 3 g
             ];
 
             foreach ($content_map as $key => $value) {
-                if (strpos($row['ten_san_pham'], $key) !== false) {
+                if (strpos($row['ten_san_pham'], trim($key)) !== false) {
                     $current_content = $value;
                     break;
                 }
@@ -234,7 +184,7 @@ Seiko SRPG59J1 được trang bị ô lịch ngày và thứ tại vị trí 3 g
         $folder = ($row['id_thuong_hieu'] == 5) ? "chitiet_seiko" : "chitiet_rolex"  ;
 
         // 3. Tạo mảng ảnh hoàn chỉnh
-        $js_images = ["../" . $row['anh_san_pham']]; // Ảnh chính luôn ở đầu (index 0)
+        $js_images = [$anh_chinh]; // Ảnh chính luôn ở đầu (index 0)
 
         if (isset($gallery_data[$current_id])) {
             foreach ($gallery_data[$current_id] as $file) {
@@ -250,20 +200,37 @@ Seiko SRPG59J1 được trang bị ô lịch ngày và thứ tại vị trí 3 g
             const mainImg = document.getElementById('main-product-img');
             const thumbs = document.querySelectorAll('.thumb');
 
-            function changeImage(index) {
+            function changeImage(param) {
+                let index;
+
+                // Trường hợp 1: click trực tiếp vào ảnh thumbnail (truyền `this`)
+                if (typeof param === 'object' && param !== null && param.src) {
+                    index = Array.from(thumbs).indexOf(param);
+                }
+                // Trường hợp 2: bấm nút prev/next (truyền số thứ tự)
+                else if (typeof param === 'number') {
+                    index = param;
+                } else {
+                    return;
+                }
+
                 if (index < 0 || index >= images.length) return;
-                
+
                 currentIndex = index;
                 mainImg.style.opacity = 0.8;
-                
+
                 setTimeout(() => {
                     mainImg.src = images[currentIndex];
+                    mainImg.onerror = function() {
+                        this.onerror = null;
+                        this.src = '../image/no-image.png';
+                    };
                     mainImg.style.opacity = 1;
-                }, 100); 
-                
+                }, 100);
+
                 // Cập nhật trạng thái active cho ảnh nhỏ
                 thumbs.forEach((thumb, i) => {
-                    if(i === currentIndex) thumb.classList.add('active');
+                    if (i === currentIndex) thumb.classList.add('active');
                     else thumb.classList.remove('active');
                 });
             }
@@ -471,7 +438,7 @@ $allData = [
                     "Sản phẩm  khẳng định đẳng cấp với bộ vỏ ceramic xanh công nghệ cao, được sản xuất thông qua quy trình nung ở nhiệt độ cực cao, tạo nên kết cấu siêu cứng, chống trầy xước vượt trội và giữ màu bền bỉ theo thời gian.",
                     "Đồng hồ sở hữu bộ vỏ thép không gỉ cao cấp với đường kính 42.4mm, mang lại vẻ ngoài mạnh mẽ, nam tính và chắc chắn. Kiểu dáng đậm chất thể thao phù hợp với nhiều phong cách, từ thường ngày đến năng động."
                 ],
-                "img" => "../image/chitiet_seiko/seiko1-1.png"
+                "img" => "../image/no-image.png"
             ],
             [
                 "h3" => "VÀNH BEZEL XOAY MỘT CHIỀU",
@@ -722,7 +689,7 @@ $allData = [
                     "Dạ quang trên kim và cọc số: Hỗ trợ xem giờ rõ ràng trong điều kiện thiếu sáng.",
                     "Thiết kế Sharp Edged hiện đại: Tinh tế, sắc nét, đậm dấu ấn thẩm mỹ Nhật Bản."
                 ],
-                "img" => "../image/chitiet_sp5-seiko.png"
+                "img" => "../image/sp5-seiko.png"
             ],
         ]
 ],
@@ -902,6 +869,14 @@ $current = $allData[$type] ?? null;
     <div class="story-container">
 
         <?php foreach ($current['items'] as $item): ?>
+            <?php 
+                $item_img = trim($item['img'] ?? '');
+                if (strpos($item_img, 'http://') === 0 || strpos($item_img, 'https://') === 0) {
+                    $item_img_src = $item_img;
+                } else {
+                    $item_img_src = (strpos($item_img, '../') === 0) ? $item_img : '../' . $item_img;
+                }
+            ?>
             <div class="story-block">
 
                 <div class="story-text">
@@ -914,8 +889,8 @@ $current = $allData[$type] ?? null;
                 </div>
 
                 <div class="story-img">
-                    <img src="<?= $item['img'] ?>" 
-                         onerror="this.src='../<?= $row['anh_san_pham'] ?>'">
+                    <img src="<?= $item_img_src ?>" 
+                         onerror="this.onerror=null; this.src='../image/no-image.png';" alt="<?= htmlspecialchars($item['h2']) ?>">
                 </div>
 
             </div>
@@ -949,8 +924,20 @@ $current = $allData[$type] ?? null;
         // lấy id sản phẩm hiện tại
         $productId = $row['id'];
 
-    // nếu không có thì dùng ảnh mặc định
-    $image = $publicationImages[$productId] ?? "default.jpg";
+        // nếu không có thì dùng ảnh mặc định
+        $pub_raw = $publicationImages[$productId] ?? "seiko-anpham.png";
+        if (strpos($pub_raw, 'http://') === 0 || strpos($pub_raw, 'https://') === 0) {
+            $pub_img_src = $pub_raw;
+        } else {
+            $pub_clean = ltrim(str_replace('../', '', $pub_raw), '/');
+            if (strpos($pub_clean, 'image/') === 0) {
+                $pub_img_src = '../' . $pub_clean;
+            } elseif (strpos($pub_clean, 'chitiet_seiko/') === 0) {
+                $pub_img_src = '../image/' . $pub_clean;
+            } else {
+                $pub_img_src = '../image/chitiet_seiko/' . $pub_clean;
+            }
+        }
     ?>
         <section class="bottom-info-section">
         <h3 class="cert-title">Chứng nhận</h3>
@@ -961,10 +948,11 @@ $current = $allData[$type] ?? null;
             <i class="fa-solid fa-download"></i> Tải ấn phẩm
         </a>
         
-        <img src="../image/chitiet_seiko/<?php echo $image; ?>" 
+        <img src="<?php echo $pub_img_src; ?>" 
             style="max-width:300px;" 
             alt="Ấn phẩm Seiko" 
-            class="publication-img">
+            class="publication-img"
+            onerror="this.onerror=null; this.src='../image/no-image.png';">
     </section>
 
 <style>
@@ -1027,7 +1015,7 @@ include 'module_danh_gia.php';
     
     <footer class="footer">
         <div class="footer-left">
-            <div class="footer-logo"><img src="../image/logo.png" alt="Timeless"></div>
+            <div class="footer-logo"><img src="../image/logo.png" alt="Timeless" onerror="this.onerror=null; this.src='../image/no-image.png';"></div>
             <h3 class="footer-title">TIMELESS</h3>
             <div class="footer-line"></div>
             <p>03-05 Pasteur, P. Nguyễn Thái Bình, Quận 1, TPHCM</p>
@@ -1067,7 +1055,7 @@ include 'module_danh_gia.php';
         <div class="sticky-bar-content">
             
             <div class="sticky-info">
-                <img src="../<?php echo $row['anh_san_pham']; ?>" alt="Rolex Mini">
+                <img src="<?php echo $anh_chinh; ?>" alt="<?php echo htmlspecialchars($row['ten_san_pham']); ?>" onerror="this.onerror=null; this.src='../image/no-image.png';">
                 <h4 class="sticky-title"><?php echo $row['ten_san_pham']; ?></h4>
             </div>
 
@@ -1234,11 +1222,10 @@ include 'module_danh_gia.php';
             });
         }
     </script>
-    
-    <?php include '../thongbao.php'; ?>
 
 <?php
 include '../ai-chatbot.php';
+include '../thongbao.php';
 // Dòng này BẮT BUỘC nằm ở cuối cùng của file
 include $path_prefix . 'footer.php'; 
 ?>

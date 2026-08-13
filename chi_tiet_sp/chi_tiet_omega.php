@@ -11,12 +11,12 @@ if (isset($_GET['id'])) {
     $sql = "SELECT * FROM san_pham WHERE id = $id";
     $result = $conn->query($sql);
 
-    if ($result->num_rows > 0) {
+    if ($result && $result->num_rows > 0) {
         $row = $result->fetch_assoc();
         
         // Định dạng tiền tệ
         $gia_ban = number_format($row['gia_ban'], 0, ',', '.') . ' VNĐ';
-        $gia_cu = $row['gia_cu'] ? number_format($row['gia_cu'], 0, ',', '.') . ' VNĐ' : '';
+        $gia_cu = (!empty($row['gia_cu']) && $row['gia_cu'] > 0) ? number_format($row['gia_cu'], 0, ',', '.') . ' VNĐ' : '';
     } else {
         die("<h2 style='text-align:center; margin-top:50px;'>Sản phẩm không tồn tại trong hệ thống!</h2>");
     }
@@ -38,79 +38,121 @@ if (isset($_SESSION['user_id'])) {
 $path_prefix = '../'; 
 $custom_css = 'chi_tiet.css';
 
+/**
+ * format_img_url(): Hàm xử lý đường dẫn ảnh chung
+ * - Nếu rỗng → trả về ảnh mặc định chung (no-image.png)
+ * - Nếu là http:// hoặc https:// → giữ nguyên (Azure/CDN)
+ * - Nếu là đường dẫn local → chuẩn hóa thành ../path
+ */
+if (!function_exists('format_img_url')) {
+    function format_img_url($url) {
+        $url = trim($url ?? '');
+        
+        // 🟢 ĐÃ SỬA: Thay seiko1-1.png thành no-image.png để không bị dính ảnh Seiko sang các trang khác
+        if (empty($url)) return '../image/no-image.png';
+        
+        if (strpos($url, 'http://') === 0 || strpos($url, 'https://') === 0) {
+            return $url; // Azure / CDN URL – giữ nguyên
+        }
+        
+        // Local path: bỏ ./ hay ../ dư thừa rồi nối ../
+        return '../' . ltrim(preg_replace('#^\.{1,2}/#', '', $url), '/');
+    }
+}
+
 // 6. NHÚNG HEADER CHUNG
 include $path_prefix . 'header.php';
+
+// 7. XỬ LÝ ĐƯỜNG DẪN ẢNH CHÍNH (dùng format_img_url chuẩn)
+$anh_chinh = format_img_url($row['anh_san_pham'] ?? '');
+$so_ref = $row['so_tham_chieu'] ?? '';
 ?>
-    
-    <div style="background-color: #f9f9f9; padding: 0;">
-       <div class="product-detail-container" style="padding-top: 20px; padding-bottom: 40px;">
+
+<div style="background-color: #f9f9f9; padding: 30px 0;">
+    <div class="product-detail-container" style="max-width: 1200px; margin: 0 auto; display: flex; gap: 30px; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
         
-           <div class="product-gallery" style="border:none; padding: 0;">
+        <!-- 🖼️ KHU VỰC ALBUM ẢNH (BÊN TRÁI) -->
+        <div class="product-gallery" style="flex: 1; border:none; padding: 0;">
             
-            <div class="main-image-container">
+            <div class="main-image-container" style="position: relative; text-align: center; margin-bottom: 15px;">
                 <div class="gallery-nav">
                     <i class="fa-solid fa-chevron-left" id="prev-btn"></i>
                     <i class="fa-solid fa-chevron-right" id="next-btn"></i>
                 </div>
-                <img id="main-product-img" src="../<?php echo $row['anh_san_pham']; ?>" alt="<?php echo $row['ten_san_pham']; ?>" style="max-width: 350px;">
+                <!-- 🟢 1. Ảnh chính: Bọc show_img_url(), nếu hỏng ảnh thì ẩn/trỏ ảnh mặc định chung -->
+                <img id="main-product-img" 
+                     src="<?php echo show_img_url($anh_chinh); ?>" 
+                     alt="<?php echo htmlspecialchars($row['ten_san_pham']); ?>" 
+                     style="max-width: 380px; width: 100%; border-radius: 8px;" 
+                     onerror="this.onerror=null; this.src='../image/no-image.png';">
             </div>
 
-            <div class="thumbnail-slider">
-                <img src="../<?php echo $row['anh_san_pham']; ?>" class="thumb active" onclick="changeImage(0)" alt="Ảnh chính">
-                
-                <?php if (strpos($row['so_tham_chieu'], '210.32.42.20.04.001') !== false): ?>
-                    <img src="../image/chitiet_omega/omega1_daydeo.png" class="thumb" onclick="changeImage(1)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega1_chuyendong.png" class="thumb" onclick="changeImage(2)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega1_matso.png" class="thumb" onclick="changeImage(3)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega1_matsso.png" class="thumb" onclick="changeImage(4)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega1_anpham.png" class="thumb" onclick="changeImage(5)" onerror="this.style.display='none'">
+            <div class="thumbnail-slider" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <!-- 🟢 2. Thumbnail Ảnh chính: Bọc show_img_url() -->
+                <img src="<?php echo show_img_url($anh_chinh); ?>" 
+                     class="thumb active" 
+                     onclick="changeImage(this)" 
+                     alt="Ảnh chính" 
+                     onerror="this.onerror=null; this.style.display='none';">
+                <?php
+                // 🟢 3. Định nghĩa fallback chung cho Thumbnail: ẢNH LỖI -> TỰ ẨN, KHÔNG HIỆN SEIKO NỮA
+                $thumb_err = "onerror=\"this.onerror=null; this.style.display='none';\"";
+                ?>
 
-                <?php elseif (strpos($row['so_tham_chieu'], '424.25.24.60.55.001') !== false): ?>
-                    <img src="../image/chitiet_omega/omega5_daydeo.png" class="thumb" onclick="changeImage(1)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega2_chuyendong.png" class="thumb" onclick="changeImage(2)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega2_matso.png" class="thumb" onclick="changeImage(3)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega2_full.png" class="thumb" onclick="changeImage(4)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega2_anpham.png" class="thumb" onclick="changeImage(5)" onerror="this.style.display='none'">
+                <?php if (strpos($so_ref, '210.32.42.20.04.001') !== false): ?>
+                    <img src="../image/chitiet_omega/omega1_daydeo.png"    class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega1_chuyendong.png" class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega1_matso.png"      class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega1_matsso.png"     class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega1_anpham.png"     class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
 
-                <?php elseif (strpos($row['so_tham_chieu'], '210.30.44.51.03.002') !== false): ?>
-                    <img src="../image/chitiet_omega/omega3_daydeo.png" class="thumb" onclick="changeImage(1)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega3_chuyendong.png" class="thumb" onclick="changeImage(2)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega3_matso.png" class="thumb" onclick="changeImage(3)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega3_full.png" class="thumb" onclick="changeImage(4)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega3_anpham.png" class="thumb" onclick="changeImage(5)" onerror="this.style.display='none'">
+                <?php elseif (strpos($so_ref, '424.25.24.60.55.001') !== false): ?>
+                    <img src="../image/chitiet_omega/omega2_daydeo.png"     class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega2_chuyendong.png" class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega2_matso.png"      class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega2_full.png"       class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega2_anpham.png"     class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
 
-                <?php elseif (strpos($row['so_tham_chieu'], '331.20.42.51.02.001') !== false): ?>
-                    <img src="../image/chitiet_omega/omega4_daydeo.png" class="thumb" onclick="changeImage(1)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega4_duoicung.png" class="thumb" onclick="changeImage(2)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega4_chuyendong.png" class="thumb" onclick="changeImage(3)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega4_full.png" class="thumb" onclick="changeImage(4)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega4_anpham.png" class="thumb" onclick="changeImage(5)" onerror="this.style.display='none'">
+                <?php elseif (strpos($so_ref, '210.30.44.51.03.002') !== false): ?>
+                    <img src="../image/chitiet_omega/omega3_daydeo.png"    class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega3_chuyendong.png" class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega3_matso.png"      class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega3_full.png"       class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega3_anpham.png"     class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
 
-                <?php elseif (strpos($row['so_tham_chieu'], '424.10.37.20.01.001') !== false): ?>
-                    <img src="../image/chitiet_omega/omega5_daydeo.png" class="thumb" onclick="changeImage(1)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega5_chuyendong.png" class="thumb" onclick="changeImage(2)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega5_matso.png" class="thumb" onclick="changeImage(3)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega5_full.png" class="thumb" onclick="changeImage(4)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega5_anpham.png" class="thumb" onclick="changeImage(5)" onerror="this.style.display='none'">
-                <?php elseif (strpos($row['so_tham_chieu'], '131.20.29.20.06.001') !== false): ?>
-                    <img src="../image/chitiet_omega/image57a.png" class="thumb" onclick="changeImage(1)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
-                    <img src="../image/chitiet_omega/image57b.png" class="thumb" onclick="changeImage(2)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
-                    <img src="../image/chitiet_omega/image57c.png" class="thumb" onclick="changeImage(3)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
-                    <img src="../image/chitiet_omega/image57d.png" class="thumb" onclick="changeImage(4)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
+                <?php elseif (strpos($so_ref, '331.20.42.51.02.001') !== false): ?>
+                    <img src="../image/chitiet_omega/omega4_daydeo.png"    class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega4_duoicung.png"   class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega4_chuyendong.png" class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega4_full.png"       class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega4_anpham.png"     class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
 
-                <?php elseif (strpos($row['so_tham_chieu'], '434.20.34.20.02.001') !== false): ?>
-                    <img src="../image/chitiet_omega/image58b.png" class="thumb" onclick="changeImage(1)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
-                    <img src="../image/chitiet_omega/image58c.png" class="thumb" onclick="changeImage(2)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
-                    <img src="../image/chitiet_omega/image58a.png" class="thumb" onclick="changeImage(3)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
-                    <img src="../image/chitiet_omega/image58d.png" class="thumb" onclick="changeImage(4)" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'">
+                <?php elseif (strpos($so_ref, '424.10.37.20.01.001') !== false): ?>
+                    <img src="../image/chitiet_omega/omega5_daydeo.png"    class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega5_chuyendong.png" class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega5_matso.png"      class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega5_full.png"       class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega5_anpham.png"     class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+
+                <?php elseif (strpos($so_ref, '131.20.29.20.06.001') !== false): ?>
+                    <img src="../image/chitiet_omega/image57a.png" class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/image57b.png" class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/image57c.png" class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/image57d.png" class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+
+                <?php elseif (strpos($so_ref, '434.20.34.20.02.001') !== false): ?>
+                    <img src="../image/chitiet_omega/image58b.png" class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/image58c.png" class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/image58a.png" class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/image58d.png" class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+
                 <?php else: ?>
-                    <img src="../image/chitiet_omega/omega_default_1.png" class="thumb" onclick="changeImage(1)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega_default_2.png" class="thumb" onclick="changeImage(2)" onerror="this.style.display='none'">
-                    <img src="../image/chitiet_omega/omega_default_3.png" class="thumb" onclick="changeImage(3)" onerror="this.style.display='none'">
+                    <img src="../image/chitiet_omega/omega_default_1.png" class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega_default_2.png" class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
+                    <img src="../image/chitiet_omega/omega_default_3.png" class="thumb" onclick="changeImage(this)" onerror="<?php echo $thumb_err; ?>">
                 <?php endif; ?>
             </div>
-
-
+        
             <div class="highlight-box" style="border-left-color: #2b6cb0;">
                 <?php if (strpos($row['so_tham_chieu'], '210.32.42.20.04.001') !== false): ?>
                     <h4 style="color: #2b6cb0; font-size: 22px;">BIỂU TƯỢNG CỦA ĐẠI DƯƠNG</h4>
@@ -487,7 +529,7 @@ include $path_prefix . 'header.php';
                         <p>Khả năng chống nước của Omega De Ville Prestige dừng ở mức 30 mét (3 ATM), cho phép bạn yên tâm sử dụng khi rửa tay hoặc đi dưới những cơn mưa nhẹ. Mặt kính sapphire chống trầy xước với độ cứng cao giúp bảo vệ tối đa cho mặt số xà cừ và các viên kim cương giá trị bên trong. Lớp kính này giữ cho đồng hồ luôn sáng bóng và mới mẻ, đảm bảo vẻ đẹp hoàn mỹ theo thời gian.</p>
                     </div>
                 </div>
-                <div class="story-img"><img src="../image/chitiet_omega/omega2_165.webp" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'"></div>
+                <div class="story-img"><img src="../image/chitiet_omega/omega_165.webp" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'"></div>
             </div>
         </div>
     </section>
@@ -633,7 +675,7 @@ include $path_prefix . 'header.php';
                         <p>Không chỉ là một chiếc đồng hồ trang sức, De Ville Prestige còn sở hữu độ chính xác và bền bỉ vượt trội. Được trang bị bộ máy Co-Axial Chronometer Calibre 2500 (thương hiệu Omega) hoạt động bền bỉ, mang lại độ chính xác cao, dự trữ năng lượng 48 giờ. Khả năng chống nước 30 mét (3 bar), đủ dùng hàng ngày (rửa tay, mưa nhẹ). Mặt kính sapphire chống trầy xước bảo vệ tối đa mặt số và các chi tiết. Chiếc De Ville Prestige này là sự kết hợp hoàn hảo giữa di sản thanh lịch cổ điển, công nghệ hiện đại và phong cách tinh tế – dành cho những ai trân trọng sự sang trọng giản dị và đẳng cấp thực thụ.</p>
                     </div>
                 </div>
-                <div class="story-img"><img src="../image/chitiet_omega/omega5-60webp.webp" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'"></div>
+                <div class="story-img"><img src="../image/chitiet_omega/omega-60webp.webp" onerror="this.src='../<?php echo $row['anh_san_pham']; ?>'"></div>
             </div>
         </div>
     </section>
@@ -766,8 +808,11 @@ include $path_prefix . 'header.php';
                     </p>
                 </div>
                 <div class="story-img" style="flex: 1; text-align: center;">
-                    <img src="../image/chitiet_omega/image58d.png" style="width: 100%; max-width: 300px;" onerror="this.src='../<?php echo trim($row['anh_san_pham']); ?>'">
-                </div>
+    <img src="<?php echo show_img_url('../image/chitiet_omega/image58d.png'); ?>" 
+         style="width: 100%; max-width: 300px;" 
+         alt="Câu chuyện Omega" 
+         onerror="this.onerror=null; this.style.display='none';">
+</div>
             </div>
 
         </div>
@@ -807,8 +852,11 @@ include $path_prefix . 'header.php';
         }
         
         ?>
-        <img src="../image/chitiet_omega/<?php echo $anpham_img; ?>" alt="Ấn phẩm Omega" class="publication-img" onerror="this.style.display='none'">
-    </section>
+        <img src="<?php echo show_img_url('../image/chitiet_omega/' . $anpham_img); ?>" 
+     alt="Ấn phẩm Omega" 
+     class="publication-img" 
+     onerror="this.onerror=null; this.style.display='none';">
+</section>
 
 
 
@@ -876,7 +924,7 @@ include 'module_danh_gia.php';
 
     <footer class="footer">
         <div class="footer-left">
-            <div class="footer-logo"><img src="../image/logo.png" alt="Timeless"></div>
+            <div class="footer-logo"><img src="../image/logo.png" alt="Timeless" onerror="this.onerror=null; this.src='../image/no-image.png';"></div>
             <h3 class="footer-title">TIMELESS</h3>
             <div class="footer-line"></div>
             <p>03-05 Pasteur, P. Nguyễn Thái Bình, Quận 1, TPHCM</p>
@@ -917,7 +965,7 @@ include 'module_danh_gia.php';
         <div class="sticky-bar-content">
             
             <div class="sticky-info">
-                <img src="../<?php echo $row['anh_san_pham']; ?>" alt="Omega Mini">
+                <img src="<?php echo $anh_chinh; ?>" alt="Omega Mini" onerror="this.onerror=null; this.src='../image/no-image.png';">
                 <h4 class="sticky-title"><?php echo $row['ten_san_pham']; ?></h4>
             </div>
 
@@ -946,16 +994,7 @@ include 'module_danh_gia.php';
         </div>
     </div>
 
-<div id="deleteModal" class="glass-modal">
-        <div class="glass-modal-content">
-            <i class="fa-solid fa-circle-exclamation" style="font-size: 40px; color: #d9534f; margin-bottom: 10px;"></i>
-            <h3 style="margin: 0; margin-bottom: 10px;">Xác nhận xóa?</h3>
-            <p style="font-size: 14px; color: #666; margin-bottom: 20px;">Bình luận của bạn sẽ biến mất vĩnh viễn.</p>
-            <input type="hidden" id="temp_del_id">
-            <button class="btn-confirm-del" onclick="processDelete()">Xóa ngay</button>
-            <button class="btn-cancel-del" onclick="document.getElementById('deleteModal').style.display='none'">Hủy</button>
-        </div>
-    </div>
+<!-- deleteModal đã có ở trên (L873), không cần khai báo lại -->
 
     <script>
         // 1. AJAX: THẢ TIM SẢN PHẨM
@@ -1084,7 +1123,37 @@ include 'module_danh_gia.php';
             });
         }
     </script>
-    
+    <script>
+function changeImage(param) {
+    let mainImg = document.getElementById('main-product-img');
+    let thumbs = document.querySelectorAll('.thumb');
+    if (!mainImg || thumbs.length === 0) return;
+
+    // 1. Gỡ bỏ viền nâu (active) ở TẤT CẢ các ảnh nhỏ
+    thumbs.forEach(img => img.classList.remove('active'));
+
+    // 2. Cập nhật ảnh lớn VÀ bật viền nâu cho ảnh vừa được click
+    if (typeof param === 'object' && param.src) {
+        // Nếu truyền `this`
+        mainImg.src = param.src;
+        param.classList.add('active');
+    } 
+    else if (typeof param === 'number') {
+        // Nếu truyền số thứ tự (0, 1, 2...)
+        if (thumbs[param]) {
+            mainImg.src = thumbs[param].src;
+            thumbs[param].classList.add('active');
+        }
+    } 
+    else if (typeof param === 'string') {
+        // Nếu truyền chuỗi link (this.src)
+        mainImg.src = param;
+        thumbs.forEach(img => {
+            if (img.src === param) img.classList.add('active');
+        });
+    }
+}
+</script>
     <?php include '../thongbao.php'; ?>
 
 <?php

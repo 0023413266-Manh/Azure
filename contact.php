@@ -117,7 +117,7 @@ if (isset($_POST['gui_lien_he'])) {
                 </div>
                 
                 <div class="map-container" style="margin-top: 20px; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.513274106207!2d106.69907381480081!3d10.771944792324628!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f40a3b3b15f%3A0x1288b5a3297a8e57!2zMDMgUGFzdGV1ciwgTmd1eễnIFRow6FpIELDrG5oLCBRdeG6rW4gMSwgVGjDoG5oIHBo4buRIEjhu5MgQ2jDrSBNaW5o!5e0!3m2!1svi!2s!4v1700000000000!5m2!1svi!2s" width="100%" height="250" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                   <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1959.7779099215275!2d106.69929395655167!3d10.768675297333859!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752fdecc18c3d1%3A0x30affd1d8e6f5d1f!2sEmpire%20Luxury!5e0!3m2!1svi!2s!4v1786550739483!5m2!1svi!2s" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
                 </div>
 
             </div>

@@ -43,67 +43,78 @@ $custom_css = 'chi_tiet.css';
 include $path_prefix . 'header.php';
 
 
-?>
 
-<!-- NỘI DUNG CHÍNH CỦA TRANG CHI TIẾT SẢN PHẨM -->
-    <div style="background-color: #f9f9f9; padding: 0;">
-       <div class="product-detail-container" style="padding-top: 20px; padding-bottom: 40px;">
+// 7. Xử lý đường dẫn ảnh chính (giữ nguyên Azure URL, chỉ nối ../ cho local)
+$raw_img = trim($row['anh_san_pham'] ?? '');
+if (!empty($raw_img) && strpos($raw_img, 'http') === 0) {
+    $anh_chinh = $raw_img; // Link Azure – giữ nguyên
+} else {
+    // Local: gắn ../ nếu chưa có
+    $anh_chinh = (strpos($raw_img, '../') === 0) ? $raw_img : '../' . ltrim($raw_img, '/');
+}
+?>
+<div style="background-color: #f9f9f9; padding: 0;">
+    <div class="product-detail-container" style="padding-top: 20px; padding-bottom: 40px;">
         
-           <div class="product-gallery" style="border:none; padding: 0;">
+        <div class="product-gallery" style="border:none; padding: 0;">
             
             <div class="main-image-container">
                 <div class="gallery-nav">
                     <i class="fa-solid fa-chevron-left" id="prev-btn"></i>
                     <i class="fa-solid fa-chevron-right" id="next-btn"></i>
                 </div>
-                <img id="main-product-img" src="../<?php echo $row['anh_san_pham']; ?>" alt="<?php echo $row['ten_san_pham']; ?>" style="max-width: 350px;">
-            </div>
+                <!-- 🟢 1. Ảnh chính lớn: Bọc hàm show_img_url() -->
+                <img id="main-product-img" 
+     src="<?php echo show_img_url($anh_chinh); ?>" 
+     alt="<?php echo htmlspecialchars($row['ten_san_pham']); ?>" 
+     style="max-width: 350px;" 
+     onerror="this.onerror=null; this.src='../image/chitiet_casio/casio1-1.png';">
+</div>
 
-            <div class="thumbnail-slider">
-                <img src="../<?php echo $row['anh_san_pham']; ?>" class="thumb active" onclick="changeImage(0)" alt="Ảnh chính">
+<div class="thumbnail-slider">
+    <!-- 🟢 1. Thumbnail Ảnh chính: Đổi onerror về ảnh mặc định chung -->
+    <img src="<?php echo show_img_url($anh_chinh); ?>" 
+         class="thumb active" 
+         onclick="changeImage(this)" 
+         alt="Ảnh chính" 
+         onerror="this.onerror=null; this.src='../image/no-image.png';">
 
-                <?php
-                // 2. Định nghĩa danh sách ảnh phụ cho từng sản phẩm (Dựa trên ID trong Database)
-                // Bạn chỉ cần thêm ID và danh sách ảnh tương ứng vào đây
-                $gallery = [
-                    33 => [ 
-                        'casio1-1.png', 'casio1-2.png', 'casio1-3.png', 'casio1-4.png', 'casio1-anpham.png',
-                    ],
-                    34 => [ 
-                        'casio2-1.png', 'casio2-2.png', 'casio2-3.png', 'casio2-4.png', 'casio2-anpham.png'
-                    ],
-                    35 => [ // Sản phẩm ID = 3
-                        'casio3-1.png', 'casio3-2.png', 'casio3-3.png', 'casio3-4.png', 'casio3-anpham.png'
-                    ],
-                    36 => [ // Sản phẩm ID = 3
-                        'casio4-1.png', 'casio4-2.png', 'casio4-3.png', 'casio4-4.png', 'casio4-anpham.png'
-                    ],
-                    37 => [ // Sản phẩm ID = 3
-                        'casio5-1.png', 'casio5-2.png', 'casio5-3.png', 'casio5-4.png', 'casio5-anpham.png'
-                    ],
-                    38 => [ // Sản phẩm ID = 3
-                        'casio6-1.png', 'casio6-2.png', 'casio6-3.png', 'casio6-4.png', 'casio6-anpham.png'
-                    ],
-                    39 => [ // Sản phẩm ID = 3
-                        'casio7-1.png', 'casio7-2.png', 'casio7-3.png', 'casio7-4.png', 'casio3-anpham.png'
-                    ],
-                    40 => [ // Sản phẩm ID = 3
-                       'casio8-1.png', 'casio8-2.png', 'casio8-3.png', 'casio8-4.png', 'casio8-anpham.png'
-                    ],
-                ];
+    <?php
+    // 2. Link gốc Azure chứa ảnh phụ 
+    $azure_gallery_url = "https://webdongho2026.blob.core.windows.net/blob-anh-dongho/"; 
 
-                // 3. Lấy ID của sản phẩm hiện tại
-                $current_id = $row['id'];
+    // 3. Mảng ảnh phụ
+    $gallery = [
+        33 => ['casio1-1.png', 'casio1-2.png', 'casio1-3.png', 'casio1-4.png'],
+        34 => ['casio2-1.png', 'casio2-2.png', 'casio2-3.png', 'casio2-4.png'],
+        35 => ['casio3-1.png', 'casio3-2.png', 'casio3-3.png', 'casio3-4.png'],
+        36 => ['casio4-1.png', 'casio4-2.png', 'casio4-3.png', 'casio4-4.png'],
+        37 => ['casio5-1.png', 'casio5-2.png', 'casio5-3.png', 'casio5-4.png'],
+        38 => ['casio6-1.png', 'casio6-2.png', 'casio6-3.png', 'casio6-4.png'],
+        39 => ['casio7-1.png', 'casio7-2.png', 'casio7-3.png', 'casio7-4.png'],
+        40 => ['casio8-1.png', 'casio8-3.png', 'casio8-4.png'],
+    ];
 
-                // 4. Kiểm tra xem ID này có trong danh sách gallery không
-                if (isset($gallery[$current_id])) {
-                    foreach ($gallery[$current_id] as $index => $file_name) {
-                        // $index + 1 vì ảnh chính đã là số 0 rồi
-                        echo '<img src="../image/chitiet_casio/' . $file_name . '" class="thumb" onclick="changeImage(' . ($index + 1) . ')" alt="Ảnh chi tiết">';
-                    }
-                }
-                ?>
-            </div>
+    $current_id = $row['id'] ?? $row['id_san_pham'] ?? 0;
+
+    if (isset($gallery[$current_id])) {
+        foreach ($gallery[$current_id] as $file_name) {
+            // Kiểm tra link online
+            if (preg_match('/^https?:\/\//i', $file_name)) {
+                $img_sub_path = $file_name;
+            } else {
+                $img_sub_path = $azure_gallery_url . $file_name;
+            }
+            
+            // Chuẩn hóa đường dẫn
+            $final_img = show_img_url($img_sub_path);
+
+            // 🟢 ĐÃ SỬA: Nếu ảnh thumbnail bị thiếu/lỗi 404, TỰ ĐỘNG ẨN THẺ ẢNH ĐÓ ĐI, không hiện ảnh ấn phẩm hay khung vỡ nữa!
+            echo '<img src="' . $final_img . '" class="thumb" onclick="changeImage(this)" alt="Ảnh chi tiết" onerror="this.onerror=null; this.style.display=\'none\';">';
+        }
+    }
+    ?>
+</div>
             
 
             <?php
@@ -213,12 +224,12 @@ include $path_prefix . 'header.php';
         $current_id = $row['id'];
         $folder = ($row['id_thuong_hieu'] == 4) ? "chitiet_casio" : "chitiet_rolex";
 
-        // 3. Tạo mảng ảnh hoàn chỉnh
-        $js_images = ["../" . $row['anh_san_pham']]; // Ảnh chính luôn ở đầu (index 0)
+        // 3. Tạo mảng ảnh hoàn chỉnh (dùng $anh_chinh đã xử lý đúng Azure/Local)
+        $js_images = [$anh_chinh]; 
 
         if (isset($gallery_data[$current_id])) {
             foreach ($gallery_data[$current_id] as $file) {
-                $js_images[] = "../image/$folder/$file";
+                $js_images[] = "https://webdongho2026.blob.core.windows.net/blob-anh-dongho/" . $file;
             }
         }
         ?>
@@ -724,7 +735,7 @@ Chống va đập vượt trội: Cấu trúc Carbon Core Guard bảo vệ tuy�
                     "
 Với chứng nhận chế tác tại Nhật Bản (Made in Japan),không chỉ là một công cụ xem giờ mà còn là biểu tượng của công nghệ tiên tiến và phong cách sống mạnh mẽ, đẳng cấp."
                 ],
-                "img" => "../image/chitiet_sp5-casio.png"
+                "img" => "../image/sp5-casio.png"
             ],
         ]
 ],
@@ -796,7 +807,7 @@ Với chứng nhận chế tác tại Nhật Bản (Made in Japan),không chỉ 
                 "h3" => "VÀNH BEZEL CARBON TÍCH HỢP",
                 "h2" => "Tuyệt tác từ vật liệu tiên tiến",
                 "content" => [
-                    "Vành bezel được thiết kế gồ ghề, mạnh mẽ với các điểm nhấn màu cam rực rỡ, không chỉ bảo vệ mặt kính khỏi trầy xước mà còn tạo nên phong cách thể thao năng động. Sự kết hợp giữa bề mặt nhám và các chi tiết kim loại tinh xảo ở nút bấm giúp đồng hồ toát lên vẻ hiện đại, sẵn sàng đồng hành cùng bạn trong cả phòng tập lẫn các hoạt động ngoài trời."
+                    "Vành bezel được thiết kế gồ ghề, mạnh mẽ với các điểm nhấn màu cam rực rỡ, không chỉ bảo vệ mặt kính khỏi trầy xước nhưng còn tạo nên phong cách thể thao năng động. Sự kết hợp giữa bề mặt nhám và các chi tiết kim loại tinh xảo ở nút bấm giúp đồng hồ toát lên vẻ hiện đại, sẵn sàng đồng hành cùng bạn trong cả phòng tập lẫn các hoạt động ngoài trời."
                 ],
                 "img" => "../image/chitiet_casio/casio7-2.png"
             ],
@@ -851,7 +862,7 @@ Với chứng nhận chế tác tại Nhật Bản (Made in Japan),không chỉ 
                 "content" => [
                      "Điểm nhấn đắt giá nhất trên phiên bản này chính là vành bezel được chế tác từ sợi carbon Torayca® và nhựa đặc biệt NANOALLOY®, tạo nên hoa văn carbon đặc trưng cực kỳ sang trọng. Sự kết hợp này mang lại khả năng chống trầy xước vượt trội và vẻ ngoài tinh tế, khẳng định đẳng cấp của dòng G-STEEL chuyên biệt."
                 ],
-                "img" => "../image/chitiet_casio/casio-2.png"
+                "img" => "../image/chitiet_casio/casio8-2.png"
             ],
              [
                 "h3" => "CHẾ TÁC TỪ THÉP KHÔNG GỈ VÀ NHỰA CAO CẤP",
@@ -911,7 +922,7 @@ $current = $allData[$type] ?? null;
 
                 <div class="story-img">
                     <img src="<?= $item['img'] ?>" 
-                         onerror="this.src='../<?= $row['anh_san_pham'] ?>'">
+                         onerror="this.onerror=null; this.src='<?php echo $anh_chinh; ?>';">
                 </div>
 
             </div>
@@ -928,27 +939,31 @@ $current = $allData[$type] ?? null;
 </section>
     <?php
         $publicationImages = [
-            33 => "../chitiet_casio/casio1-anpham.png",
-            34 => "../chitiet_casio/casio2-anpham.png",
-            35 => "../chitiet_casio/casio3-anpham.png",
-            36 => "../chitiet_casio/casio4-anpham.png",
-            37 => "../chitiet_casio/casio5-anpham.png",
-            38 => "../chitiet_casio/casio6-anpham.png",
-            39 => "../chitiet_casio/casio3-anpham.png",
-            40 => "../chitiet_casio/casio8-anpham.png",
-            41 => "../chitiet_casio/casio9-anpham.png",
-            42 => "../chitiet_casio/casio10-anpham.png",
-            43 => "../chitiet_casio/casio11-anpham.png",
-            44 => "../chitiet_casio/casio12-anpham.png",
+            33 => "casio1-anpham.png",
+            34 => "casio2-anpham.png",
+            35 => "casio3-anpham.png",
+            36 => "casio4-anpham.png",
+            37 => "casio5-anpham.png",
+            38 => "casio6-anpham.png",
+            39 => "casio3-anpham.png",
+            40 => "casio8-anpham.png",
+            41 => "casio9-anpham.png",
+            42 => "casio9-anpham.png",
+            43 => "casio9-anpham.png",
+            44 => "casio9-anpham.png",
         ];
 
-        // lấy id sản phẩm hiện tại
-        $productId = $row['id'];
+       // lấy id sản phẩm hiện tại
+    $productId = $row['id'] ?? $row['id_san_pham'] ?? 0;
 
-    // nếu không có thì dùng ảnh mặc định
-    $image = $publicationImages[$productId] ?? "default.jpg";
+    // Lấy tên ảnh từ mảng (nếu không có thì để rỗng)
+    $image_name = $publicationImages[$productId] ?? '';
+    
+    // Nối đường dẫn thư mục
+    $image_path = !empty($image_name) ? '../image/chitiet_casio/' . $image_name : '';
     ?>
-        <section class="bottom-info-section">
+    
+    <section class="bottom-info-section">
         <h3 class="cert-title">Chứng nhận</h3>
         <p class="cert-desc">Superlative Chronometer (chứng nhận COSC + Casio sau khi lắp vỏ)</p>
 
@@ -957,10 +972,12 @@ $current = $allData[$type] ?? null;
             <i class="fa-solid fa-download"></i> Tải ấn phẩm
         </a>
         
-        <img src="../image/chitiet_rolex/<?php echo $image; ?>" 
+        <!-- 🟢 ĐÃ SỬA: Bọc show_img_url và cho tự ẨN thẻ ảnh nếu file không tồn tại -->
+        <img src="<?php echo show_img_url($image_path); ?>" 
             style="max-width:300px;" 
-            alt="Ấn phẩm Rolex" 
-            class="publication-img">
+            alt="Ấn phẩm Casio" 
+            class="publication-img"
+            onerror="this.onerror=null; this.style.display='none';">
     </section>
 
 
@@ -1066,7 +1083,7 @@ include 'module_danh_gia.php';
         <div class="sticky-bar-content">
             
             <div class="sticky-info">
-                <img src="../<?php echo $row['anh_san_pham']; ?>" alt="Rolex Mini">
+                <img src="<?php echo $anh_chinh; ?>" alt="Casio Mini" onerror="this.onerror=null; this.src='../image/no-image.png';">
                 <h4 class="sticky-title"><?php echo $row['ten_san_pham']; ?></h4>
             </div>
 
@@ -1095,16 +1112,7 @@ include 'module_danh_gia.php';
         </div>
     </div>
 
-<div id="deleteModal" class="glass-modal">
-        <div class="glass-modal-content">
-            <i class="fa-solid fa-circle-exclamation" style="font-size: 40px; color: #d9534f; margin-bottom: 10px;"></i>
-            <h3 style="margin: 0; margin-bottom: 10px;">Xác nhận xóa?</h3>
-            <p style="font-size: 14px; color: #666; margin-bottom: 20px;">Bình luận của bạn sẽ biến mất vĩnh viễn.</p>
-            <input type="hidden" id="temp_del_id">
-            <button class="btn-confirm-del" onclick="processDelete()">Xóa ngay</button>
-            <button class="btn-cancel-del" onclick="document.getElementById('deleteModal').style.display='none'">Hủy</button>
-        </div>
-    </div>
+<!-- deleteModal đã có ở trên (L1006), không cần khai báo lại -->
 
     <script>
         // 1. AJAX: THẢ TIM SẢN PHẨM
@@ -1233,7 +1241,38 @@ include 'module_danh_gia.php';
             });
         }
     </script>
-    
+    <!-- DÁN VÀO DƯỚI CÙNG FILE CHI_TIET_CASIO.PHP -->
+<script>
+function changeImage(param) {
+    let mainImg = document.getElementById('main-product-img');
+    let thumbs = document.querySelectorAll('.thumb');
+    if (!mainImg || thumbs.length === 0) return;
+
+    // 1. Gỡ bỏ viền nâu (active) ở TẤT CẢ các ảnh nhỏ
+    thumbs.forEach(img => img.classList.remove('active'));
+
+    // 2. Cập nhật ảnh lớn VÀ bật viền nâu cho ảnh vừa được click
+    if (typeof param === 'object' && param.src) {
+        // Nếu truyền `this`
+        mainImg.src = param.src;
+        param.classList.add('active');
+    } 
+    else if (typeof param === 'number') {
+        // Nếu truyền số thứ tự (0, 1, 2...)
+        if (thumbs[param]) {
+            mainImg.src = thumbs[param].src;
+            thumbs[param].classList.add('active');
+        }
+    } 
+    else if (typeof param === 'string') {
+        // Nếu truyền chuỗi link (this.src)
+        mainImg.src = param;
+        thumbs.forEach(img => {
+            if (img.src === param) img.classList.add('active');
+        });
+    }
+}
+</script>
     <?php include '../thongbao.php'; ?>
 
 <?php

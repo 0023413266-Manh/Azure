@@ -1,6 +1,9 @@
 <?php
 session_start();
 
+// 🟢 1. NẠP CẤU HÌNH TỪ FILE .ENV
+require_once 'env_loader.php';
+
 if (isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit();
@@ -31,9 +34,8 @@ if (isset($_POST['dang_nhap'])) {
             if (password_verify($mat_khau, $row['mat_khau'])) {
                 $_SESSION['user_id'] = $row['id'];
 
-                // --- ĐOẠN LẤY LẠI GIỏ HÀNG CŨ ---
+                // --- ĐOẠN LẤY LẠI GIỎ HÀNG CŨ ---
                 if (!empty($row['du_lieu_gio_hang'])) {
-                    // Giải mã dữ liệu từ DB trả lại vào Giỏ hàng
                     $_SESSION['cart'] = json_decode($row['du_lieu_gio_hang'], true);
                 } else {
                     $_SESSION['cart'] = array();
@@ -65,6 +67,33 @@ if (isset($_POST['dang_nhap'])) {
     <link rel="stylesheet" href="login.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- 🟢 THƯ VIỆN GOOGLE IDENTITY SERVICES -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+        /* CSS Phủ nút Google thật lên trên nút Custom chuẩn của bạn */
+        .google-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .google-wrapper .g_id_signin {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.0001; /* Làm trong suốt nhưng vẫn bấm được */
+            overflow: hidden;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .google-wrapper .g_id_signin iframe {
+            width: 100% !important;
+            height: 100% !important;
+            transform: scale(1.5); /* Đảm bảo phủ kín toàn bộ diện tích nút */
+        }
+    </style>
 </head>
 <body>
 
@@ -104,9 +133,28 @@ if (isset($_POST['dang_nhap'])) {
                 <div class="divider"><span>Hoặc đăng nhập bằng</span></div>
 
                 <div class="social-login">
-                    <a href="https://google.com" class="social-btn btn-google">
-                        <img src="https://img.icons8.com/color/48/google-logo.png" alt="G" style="width: 24px;">
-                    </a>
+                    <!-- 🟢 NÚT GOOGLE CUSTOM CHUẨN HTML CỦA BẠN (CÓ THẺ GOOGLE THẬT PHỦ ẨN BÊN TRÊN) -->
+                    <div class="google-wrapper">
+                        <!-- Nút hiển thị mắt thường thấy: Chuẩn 100% nút của bạn -->
+                        <button type="button" class="social-btn btn-google">
+                            <img src="https://img.icons8.com/color/48/google-logo.png" alt="G" style="width: 24px;">
+                        </button>
+
+                        <!-- Lớp kích hoạt đăng nhập Google (Bị ẩn) -->
+                        <div id="g_id_onload"
+                             data-client_id="<?php echo htmlspecialchars($_ENV['GOOGLE_CLIENT_ID'] ?? ''); ?>"
+                             data-callback="handleCredentialResponse"
+                             data-auto_select="false">
+                        </div>
+
+                        <div class="g_id_signin" 
+                             data-type="icon" 
+                             data-shape="square" 
+                             data-size="large">
+                        </div>
+                    </div>
+
+                    <!-- Nút Facebook -->
                     <button type="button" class="social-btn btn-facebook">
                         <i class="fa-brands fa-facebook-f"></i>
                     </button>
@@ -117,6 +165,7 @@ if (isset($_POST['dang_nhap'])) {
         </div>
     </div>
 
+    <!-- 🟢 SCRIPT DÙNG CHUNG (Ẩn/Hiện Pass & Google Login) -->
     <script>
         const togglePassword = document.querySelector('#togglePassword');
         const password = document.querySelector('#passwordInput');
@@ -129,17 +178,36 @@ if (isset($_POST['dang_nhap'])) {
                 this.classList.toggle('fa-eye-slash');
             });
         }
+
+        function handleCredentialResponse(response) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'google_callback.php';
+
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'credential';
+            input.value = response.credential;
+
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+        }
     </script>
 
+    <!-- 🟢 HIỆN THÔNG BÁO LỖI NẾU Ở LẠI TRANG LOGIN -->
     <?php include 'thongbao.php'; ?>
 
+    <!-- 🟢 CHỈ CHẠY HIỆU ỨNG CHỜ KHI ĐĂNG NHẬP THÀNH CÔNG -->
     <?php if ($chuyen_huong != ''): ?>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const btnLogin = document.querySelector('.btn-login');
-            btnLogin.style.opacity = '0.7';
-            btnLogin.style.pointerEvents = 'none';
-            btnLogin.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> ĐANG XÁC THỰC...';
+            if (btnLogin) {
+                btnLogin.style.opacity = '0.7';
+                btnLogin.style.pointerEvents = 'none';
+                btnLogin.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> ĐANG XÁC THỰC...';
+            }
 
             setTimeout(function() {
                 window.location.href = '<?php echo $chuyen_huong; ?>';
