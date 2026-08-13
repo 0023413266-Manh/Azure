@@ -20,12 +20,28 @@ if (isset($_POST['btn_step1'])) {
         $error = "Vui lòng tích chọn ô 'Tôi không phải là người máy'!";
         $step = 1;
     } else {
-        // Gửi Yêu cầu xác thực tới Google Server
-        $verify_url = "https://www.google.com/recaptcha/api/siteverify?secret={$recaptcha_secret}&response={$recaptcha_response}";
-        $response_json = @file_get_contents($verify_url);
+        // 🟢 DÙNG CURL ĐỂ GỬI REQUEST XÁC THỰC SANG GOOGLE (CHẠY 100% ỔN ĐỊNH TRÊN AZURE)
+        $verify_url = "https://www.google.com/recaptcha/api/siteverify";
+        
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $verify_url,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query([
+                'secret' => $recaptcha_secret,
+                'response' => $recaptcha_response
+            ]),
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_SSL_VERIFYPEER => false, // Bỏ qua chặn chứng chỉ SSL trên Linux Cloud
+            CURLOPT_TIMEOUT => 10
+        ]);
+        
+        $response_json = curl_exec($ch);
+        curl_close($ch);
+
         $response_data = json_decode($response_json, true);
 
-        if (!$response_data['success']) {
+        if (!$response_data || !isset($response_data['success']) || !$response_data['success']) {
             $error = "Xác nhận Captcha thất bại! Vui lòng thử lại.";
             $step = 1;
         } else {
